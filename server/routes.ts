@@ -299,20 +299,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (alreadyAnswered) {
         // Update existing answer
-        const isCorrect = answerData.answer === question.correctAnswer;
+        const userAnswer = answerData.answer || '';
+        const isCorrect = userAnswer === question.correctAnswer;
         await storage.updateAnswer(alreadyAnswered.id, {
           assessmentId: assessmentId.toString(),
           questionId: answerData.questionId.toString(),
-          answer: answerData.answer,
+          answer: userAnswer,
           isCorrect
         });
       } else {
         // Create new answer
-        const isCorrect = answerData.answer === question.correctAnswer;
+        const userAnswer = answerData.answer || '';
+        const isCorrect = userAnswer === question.correctAnswer;
         await storage.createAnswer({
           assessmentId: assessmentId.toString(),
           questionId: answerData.questionId.toString(),
-          answer: answerData.answer,
+          answer: userAnswer,
           isCorrect
         });
       }
