@@ -1,44 +1,28 @@
-// Path resolver utility for Node.js CommonJS environment
-// This will allow server-side code to resolve @shared/* imports
-const path = require('path');
+// A minimal tsconfig-paths–style resolver for @shared/* imports
 const Module = require('module');
+const path = require('path');
 const fs = require('fs');
 
-// Store the original require implementation
 const originalRequire = Module.prototype.require;
 
-// Override require to handle @shared/* paths
-Module.prototype.require = function(modulePath) {
+Module.prototype.require = function (modulePath) {
+  // Intercept our path-alias prefix
   if (modulePath.startsWith('@shared/')) {
-    const resolvedPath = path.resolve(process.cwd(), 'dist/server', '../shared', modulePath.replace('@shared/', ''));
-    
-    // Try with different extensions/paths in order
-    if (fs.existsSync(resolvedPath + '.js')) {
-      return originalRequire.call(this, resolvedPath + '.js');
-    }
-    
-    if (fs.existsSync(resolvedPath)) {
-      return originalRequire.call(this, resolvedPath);
-    }
-    
-    // Try direct require as fallback
-    try {
-      return originalRequire.call(this, modulePath);
-    } catch (err) {
-      console.error(`Failed to resolve module: ${modulePath}`, err);
-      throw err;
-    }
-  }
-  
-  // Default behavior for all other modules
-  return originalRequire.call(this, modulePath);
-};
+    // Resolve into dist/shared (or adjust if different)
+    const relative = modulePath.replace(/^@shared\//, '');
+    const base = path.join(__dirname, '..', 'dist', 'shared', relative);
 
-// Export the resolver for explicit use
-exports.resolve = function(modulePath) {
-  if (modulePath.startsWith('@shared/')) {
-    const resolvedPath = path.resolve(process.cwd(), 'dist/server', '../shared', modulePath.replace('@shared/', ''));
-    return resolvedPath;
+    // Try .js first
+    if (fs.existsSync(base + '.js')) {
+      return originalRequire.call(this, base + '.js');
+    }
+    // Try .ts next (if you ever run TS directly)
+    if (fs.existsSync(base + '.ts')) {
+      return originalRequire.call(this, base + '.ts');
+    }
+    // If neither exists, let Node error out
   }
-  return modulePath;
+
+  // Fallback to normal behavior
+  return originalRequire.call(this, modulePath);
 };
