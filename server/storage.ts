@@ -357,9 +357,25 @@ export class MongoDBStorage implements IStorage {
   // User operations
   async getUser(id: string | number): Promise<User | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid user ID format:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const user = await User.findById(idStr);
-      return this.documentToObject(user);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const user = await User.findById(idStr);
+        return this.documentToObject(user);
+      } else {
+        // Log warning about non-ObjectId format
+        console.warn(`Non-ObjectId format ID: ${idStr}, trying alternative lookup`);
+        // Try to find by other means if possible
+        return undefined;
+      }
     } catch (error) {
       console.error('Error getting user:', error);
       return undefined;
@@ -410,9 +426,23 @@ export class MongoDBStorage implements IStorage {
   // Question operations
   async getQuestion(id: string | number): Promise<Question | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid question ID format:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const question = await Question.findById(idStr);
-      return this.documentToObject(question);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const question = await Question.findById(idStr);
+        return this.documentToObject(question);
+      } else {
+        console.warn(`Non-ObjectId format ID for question: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error getting question:', error);
       return undefined;
@@ -432,13 +462,27 @@ export class MongoDBStorage implements IStorage {
   
   async updateQuestion(id: string | number, questionData: Partial<InsertQuestion>): Promise<Question | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid question ID format for update:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const updatedQuestion = await Question.findByIdAndUpdate(
-        idStr,
-        { $set: questionData },
-        { new: true }
-      );
-      return this.documentToObject(updatedQuestion);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const updatedQuestion = await Question.findByIdAndUpdate(
+          idStr,
+          { $set: questionData },
+          { new: true }
+        );
+        return this.documentToObject(updatedQuestion);
+      } else {
+        console.warn(`Non-ObjectId format ID for question update: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error updating question:', error);
       return undefined;
@@ -447,9 +491,23 @@ export class MongoDBStorage implements IStorage {
   
   async deleteQuestion(id: string | number): Promise<boolean> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid question ID format for delete:', id);
+        return false;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const result = await Question.findByIdAndDelete(idStr);
-      return !!result;
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const result = await Question.findByIdAndDelete(idStr);
+        return !!result;
+      } else {
+        console.warn(`Non-ObjectId format ID for question delete: ${idStr}`);
+        return false;
+      }
     } catch (error) {
       console.error('Error deleting question:', error);
       return false;
@@ -519,9 +577,23 @@ export class MongoDBStorage implements IStorage {
   // Assessment operations
   async getAssessment(id: string | number): Promise<Assessment | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid assessment ID format:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const assessment = await Assessment.findById(idStr);
-      return this.documentToObject(assessment);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const assessment = await Assessment.findById(idStr);
+        return this.documentToObject(assessment);
+      } else {
+        console.warn(`Non-ObjectId format ID for assessment: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error getting assessment:', error);
       return undefined;
@@ -555,13 +627,27 @@ export class MongoDBStorage implements IStorage {
   
   async updateAssessment(id: string | number, data: Partial<Assessment>): Promise<Assessment | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid assessment ID format for update:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const updatedAssessment = await Assessment.findByIdAndUpdate(
-        idStr,
-        { $set: data },
-        { new: true }
-      );
-      return this.documentToObject(updatedAssessment);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const updatedAssessment = await Assessment.findByIdAndUpdate(
+          idStr,
+          { $set: data },
+          { new: true }
+        );
+        return this.documentToObject(updatedAssessment);
+      } else {
+        console.warn(`Non-ObjectId format ID for assessment update: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error updating assessment:', error);
       return undefined;
@@ -581,9 +667,23 @@ export class MongoDBStorage implements IStorage {
   // Answer operations
   async getAnswer(id: string | number): Promise<Answer | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid answer ID format:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const answer = await Answer.findById(idStr);
-      return this.documentToObject(answer);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const answer = await Answer.findById(idStr);
+        return this.documentToObject(answer);
+      } else {
+        console.warn(`Non-ObjectId format ID for answer: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error getting answer:', error);
       return undefined;
@@ -614,13 +714,27 @@ export class MongoDBStorage implements IStorage {
   
   async updateAnswer(id: string | number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
     try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid answer ID format for update:', id);
+        return undefined;
+      }
+      
+      // Convert number to string if needed
       const idStr = typeof id === 'number' ? String(id) : id;
-      const updatedAnswer = await Answer.findByIdAndUpdate(
-        idStr,
-        { $set: data },
-        { new: true }
-      );
-      return this.documentToObject(updatedAnswer);
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const updatedAnswer = await Answer.findByIdAndUpdate(
+          idStr,
+          { $set: data },
+          { new: true }
+        );
+        return this.documentToObject(updatedAnswer);
+      } else {
+        console.warn(`Non-ObjectId format ID for answer update: ${idStr}`);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error updating answer:', error);
       return undefined;
