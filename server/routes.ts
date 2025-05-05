@@ -183,7 +183,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if student already has an active assessment
       const userId = req.user.id;
       const userAssessments = await storage.getAssessmentsByUser(userId);
+      
+      // Find active (incomplete) assessment
       const activeAssessment = userAssessments.find(a => !a.isComplete);
+      
+      // Check if student has completed an assessment recently (within 24 hours)
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const recentlyCompletedAssessment = userAssessments.find(a => {
+        // Assessment must be complete
+        if (!a.isComplete) return false;
+        
+        // Check if assessment was completed in the last 24 hours
+        // Skip assessments without an endTime
+        if (!a.endTime) return false;
+        
+        // Handle endTime safely
+        const endTimeDate = new Date(a.endTime);
+        const completionTime = endTimeDate.getTime();
+        const currentTime = new Date().getTime();
+        return (currentTime - completionTime) < ONE_DAY_MS;
+      });
+      
+      // If student has completed an assessment recently, prevent them from starting a new one
+      if (recentlyCompletedAssessment && !activeAssessment) {
+        const completionTime = new Date(recentlyCompletedAssessment.endTime || new Date()).getTime();
+        const currentTime = new Date().getTime();
+        const timeElapsedMs = currentTime - completionTime;
+        const timeRemainingMs = ONE_DAY_MS - timeElapsedMs;
+        
+        // Convert to hours and minutes
+        const hoursRemaining = Math.floor(timeRemainingMs / (60 * 60 * 1000));
+        const minutesRemaining = Math.floor((timeRemainingMs % (60 * 60 * 1000)) / (60 * 1000));
+        
+        return res.status(403).json({ 
+          message: `You have already completed an assessment. Please wait ${hoursRemaining} hours and ${minutesRemaining} minutes before starting a new one.`,
+          waitTime: {
+            hours: hoursRemaining,
+            minutes: minutesRemaining
+          },
+          isRestricted: true
+        });
+      }
 
       if (activeAssessment) {
         // Continue existing assessment

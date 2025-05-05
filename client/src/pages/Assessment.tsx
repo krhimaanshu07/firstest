@@ -13,6 +13,12 @@ interface AssessmentResponse {
   questions?: Question[];
   isComplete?: boolean;
   timeRemaining?: number;
+  isRestricted?: boolean; // New field to indicate if student is restricted from taking assessment
+  waitTime?: {
+    hours: number;
+    minutes: number;
+  };
+  message?: string; // Server response message
 }
 
 interface StudentAssessmentProps {
