@@ -2,9 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const { registerRoutes } = require('./routes');
 const { setupAuth } = require('./auth');
-const { connectToMongoDB } = require('./mongodb');
 const path = require('path');
 
 // Function to set up the server for Vercel deployment
@@ -13,17 +11,46 @@ async function setupServer(app, server) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   
-  // Connect to MongoDB
-  await connectToMongoDB();
+  // Initialize request logging middleware
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const path = req.path;
+    let capturedJsonResponse = undefined;
+
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      capturedJsonResponse = bodyJson;
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    };
+
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (path.startsWith("/api")) {
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        }
+
+        if (logLine.length > 80) {
+          logLine = logLine.slice(0, 79) + "…";
+        }
+
+        console.log(logLine);
+      }
+    });
+
+    next();
+  });
   
-  // Create test users after MongoDB is connected
+  // Create test users
   const { createTestUsers } = require('./setup-test-users');
   await createTestUsers();
   
   // Setup authentication
   setupAuth(app);
   
-  // Register routes
+  // Register routes (MongoDB connection is already established by now)
+  const { registerRoutes } = require('./routes');
   await registerRoutes(app);
   
   // Error handling middleware
