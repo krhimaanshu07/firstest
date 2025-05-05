@@ -1,6 +1,7 @@
 import { User, Question } from './models';
 import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';
+import mongoose from 'mongoose';
 
 const scryptAsync = promisify(scrypt);
 

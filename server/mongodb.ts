@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
+import { setupMongoDBCollections } from './mongodb-setup';
 
 // Load environment variables
 dotenv.config();
 
 let mongoServer: MongoMemoryServer | null = null;
+let isAtlasConnection = false;
 
 // Connect to MongoDB - either real or in-memory
 export async function connectToMongoDB() {
@@ -22,7 +24,12 @@ export async function connectToMongoDB() {
           socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
           family: 4 // Use IPv4, skip trying IPv6
         });
+        
+        isAtlasConnection = true;
         console.log('Connected to MongoDB Atlas successfully');
+        
+        // Set up collections and indexes for Atlas connection
+        await setupMongoDBCollections();
       } catch (mongoError) {
         console.error('Failed to connect to MongoDB Atlas:', mongoError);
         console.log('Falling back to in-memory database');
