@@ -118,6 +118,11 @@ export class MemStorage implements IStorage {
     return newUser;
   }
   
+  async deleteUser(id: string | number): Promise<boolean> {
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    return this.users.delete(idNum);
+  }
+  
   async getAllStudents(): Promise<User[]> {
     return Array.from(this.users.values()).filter(user => user.role === "student");
   }
@@ -242,6 +247,11 @@ export class MemStorage implements IStorage {
     return Array.from(this.assessments.values());
   }
   
+  async deleteAssessment(id: string | number): Promise<boolean> {
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    return this.assessments.delete(idNum);
+  }
+  
   // Answer operations
   async getAnswer(id: string | number): Promise<Answer | undefined> {
     if (typeof id === 'string') {
@@ -273,6 +283,11 @@ export class MemStorage implements IStorage {
     const updatedAnswer = { ...existingAnswer, ...data };
     this.answers.set(idNum, updatedAnswer);
     return updatedAnswer;
+  }
+  
+  async deleteAnswer(id: string | number): Promise<boolean> {
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    return this.answers.delete(idNum);
   }
 
   // Create sample CS questions
@@ -413,6 +428,31 @@ export class MongoDBStorage implements IStorage {
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
+    }
+  }
+  
+  async deleteUser(id: string | number): Promise<boolean> {
+    try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid user ID format:', id);
+        return false;
+      }
+      
+      // Convert number to string if needed
+      const idStr = typeof id === 'number' ? String(id) : id;
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const result = await User.deleteOne({ _id: idStr });
+        return result.deletedCount > 0;
+      } else {
+        console.warn(`Non-ObjectId format ID for user: ${idStr}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
     }
   }
   
@@ -667,6 +707,31 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
+  async deleteAssessment(id: string | number): Promise<boolean> {
+    try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid assessment ID format for delete:', id);
+        return false;
+      }
+      
+      // Convert number to string if needed
+      const idStr = typeof id === 'number' ? String(id) : id;
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const result = await Assessment.findByIdAndDelete(idStr);
+        return !!result;
+      } else {
+        console.warn(`Non-ObjectId format ID for assessment delete: ${idStr}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      return false;
+    }
+  }
+  
   // Answer operations
   async getAnswer(id: string | number): Promise<Answer | undefined> {
     try {
@@ -741,6 +806,31 @@ export class MongoDBStorage implements IStorage {
     } catch (error) {
       console.error('Error updating answer:', error);
       return undefined;
+    }
+  }
+  
+  async deleteAnswer(id: string | number): Promise<boolean> {
+    try {
+      // Handle invalid input
+      if (!id || typeof id === 'object') {
+        console.error('Invalid answer ID format for delete:', id);
+        return false;
+      }
+      
+      // Convert number to string if needed
+      const idStr = typeof id === 'number' ? String(id) : id;
+      
+      // Check if the ID is a valid MongoDB ObjectId
+      if (mongoose.Types.ObjectId.isValid(idStr)) {
+        const result = await Answer.findByIdAndDelete(idStr);
+        return !!result;
+      } else {
+        console.warn(`Non-ObjectId format ID for answer delete: ${idStr}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting answer:', error);
+      return false;
     }
   }
 }
