@@ -1,5 +1,5 @@
 import { MongoDBStorage } from './storage';
-import { Question } from '@shared/schema';
+import { Question, InsertQuestion } from '@shared/schema';
 
 /**
  * Adds 40 fresh computer science questions to the database
@@ -8,7 +8,7 @@ import { Question } from '@shared/schema';
 export async function addCSQuestions(storage: MongoDBStorage) {
   try {
     // Define 40 questions
-    const questions: Omit<Question, 'id'>[] = [
+    const questions: InsertQuestion[] = [
       {
         title: "Big O Notation",
         content: "What is the time complexity of binary search?",
