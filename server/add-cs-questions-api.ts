@@ -579,7 +579,7 @@ export async function addCSQuestions(storage: any) {
       try {
         // Check if question with same title already exists
         const existingQuestions = await storage.getAllQuestions();
-        const exists = existingQuestions.some(q => q.title === question.title);
+        const exists = existingQuestions.some((q: { title: string }) => q.title === question.title);
         
         if (!exists) {
           await storage.createQuestion(question);
