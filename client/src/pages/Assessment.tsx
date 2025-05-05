@@ -52,14 +52,32 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     staleTime: Infinity
   });
 
-  // Set up timer
+  // Set up timer with persistence
+  const handleTimerUpdate = useCallback((seconds: number) => {
+    if (assessmentId && !isCompleted) {
+      // Persist timer to server
+      fetch(`/api/assessments/${assessmentId}/update-timer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          timeRemaining: seconds
+        })
+      }).catch(error => {
+        console.error("Failed to persist timer:", error);
+      });
+    }
+  }, [assessmentId, isCompleted]);
+
   const { 
     seconds: timeRemaining, 
     isRunning, 
     startTimer, 
     pauseTimer,
     updateTime
-  } = useTimer(7200); // Default 2 hours
+  } = useTimer(7200, handleTimerUpdate); // Default 2 hours with auto-persist callback
 
   // Format time as HH:MM:SS
   const formatTime = (totalSeconds: number) => {
@@ -95,39 +113,38 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     }
   }, [assessmentData, startTimer, updateTime]);
 
-  // Update timer on server periodically
+  // Update check for assessment completion status
   useEffect(() => {
     if (!assessmentId || !isRunning || isCompleted) return;
-
-    const intervalId = setInterval(async () => {
+    
+    // This effect now just checks if the assessment is marked as complete on the server
+    // Timer updates are handled by the handleTimerUpdate callback
+    const checkCompletionStatus = async () => {
       try {
-        const response = await fetch(`/api/assessments/${assessmentId}/update-timer`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            timeRemaining
-          })
+        const response = await fetch(`/api/assessments/${assessmentId}`, {
+          method: 'GET',
+          credentials: 'include'
         });
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to update timer: ${errorText}`);
-          
-          // If the assessment is marked as completed on the server, update local state
-          if (errorText.includes("already completed")) {
+        if (response.ok) {
+          const assessment = await response.json();
+          if (assessment.isComplete) {
             setIsCompleted(true);
+            pauseTimer();
+            if (assessment.score !== undefined) {
+              setScore(assessment.score);
+            }
           }
         }
       } catch (error) {
-        console.error("Failed to update timer:", error);
+        console.error("Failed to check assessment status:", error);
       }
-    }, 30000); // Update every 30 seconds
-
-    return () => clearInterval(intervalId);
-  }, [assessmentId, timeRemaining, isRunning, isCompleted]);
+    };
+    
+    // Check once when component mounts
+    checkCompletionStatus();
+    
+  }, [assessmentId, isRunning, isCompleted, pauseTimer]);
 
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
