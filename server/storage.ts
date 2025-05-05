@@ -1,15 +1,19 @@
-import { 
-  User, InsertUser, 
-  Question, InsertQuestion,
-  Assessment, InsertAssessment,
-  Answer, InsertAnswer,
-  users, questions, assessments, answers
-} from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
-import connectPg from "connect-pg-simple";
 import session from "express-session";
-import { pool } from "./db";
+import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models";
+import MongoStore from "connect-mongo";
+import mongoose from "mongoose";
+
+// Define types that match our Mongoose models but usable in the rest of the application
+export type User = Omit<IUser, keyof mongoose.Document> & { id: string };
+export type Question = Omit<IQuestion, keyof mongoose.Document> & { id: string };
+export type Assessment = Omit<IAssessment, keyof mongoose.Document> & { id: string };
+export type Answer = Omit<IAnswer, keyof mongoose.Document> & { id: string };
+
+// For the insert types, we use simplified versions that don't include the id
+export type InsertUser = Pick<User, "username" | "password" | "role" | "email" | "studentId">;
+export type InsertQuestion = Pick<Question, "title" | "content" | "type" | "category" | "difficulty" | "options" | "correctAnswer">;
+export type InsertAssessment = Pick<Assessment, "userId" | "startTime" | "timeRemaining">;
+export type InsertAnswer = Pick<Answer, "assessmentId" | "questionId" | "answer" | "isCorrect">;
 
 export interface IStorage {
   // User operations
@@ -300,76 +304,138 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Database implementation of IStorage
-export class DatabaseStorage implements IStorage {
+// MongoDB implementation of IStorage
+export class MongoDBStorage implements IStorage {
   public sessionStore: session.Store;
   
   constructor() {
-    // Set up PostgreSQL session store
-    const PostgresSessionStore = connectPg(session);
-    this.sessionStore = new PostgresSessionStore({
-      pool,
-      createTableIfMissing: true
+    // Set up a simple in-memory session store temporarily
+    // We'll replace this with MongoDB store once connection is established
+    this.sessionStore = new session.MemoryStore();
+  }
+  
+  // Method to initialize MongoDB session store after connection is established
+  public initSessionStore(client: any) {
+    this.sessionStore = MongoStore.create({
+      client: client,
+      ttl: 14 * 24 * 60 * 60, // 14 days in seconds
+      autoRemove: 'native'
     });
   }
   
-  // Utility to help with correct types in PostgreSQL operations
-  private mapToNullable<T>(value: T | undefined): T | null {
-    return value === undefined ? null : value;
+  // Helper function to convert Mongoose document to plain object with id
+  private documentToObject<T extends mongoose.Document>(doc: T | null): any {
+    if (!doc) return undefined;
+    const obj = doc.toObject();
+    return { ...obj, id: obj._id.toString() };
   }
   
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const user = await User.findById(String(id));
+      return this.documentToObject(user);
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
   }
   
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    try {
+      const user = await User.findOne({ username });
+      return this.documentToObject(user);
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return undefined;
+    }
   }
   
   async getUserByStudentId(studentId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.studentId, studentId));
-    return user;
+    try {
+      const user = await User.findOne({ studentId });
+      return this.documentToObject(user);
+    } catch (error) {
+      console.error('Error getting user by student ID:', error);
+      return undefined;
+    }
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
+    try {
+      const newUser = new User(user);
+      await newUser.save();
+      return this.documentToObject(newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
   
   async getAllStudents(): Promise<User[]> {
-    return db.select().from(users).where(eq(users.role, "student"));
+    try {
+      const students = await User.find({ role: 'student' });
+      return students.map(student => this.documentToObject(student));
+    } catch (error) {
+      console.error('Error getting all students:', error);
+      return [];
+    }
   }
   
   // Question operations
   async getQuestion(id: number): Promise<Question | undefined> {
-    const [question] = await db.select().from(questions).where(eq(questions.id, id));
-    return question;
+    try {
+      const question = await Question.findById(String(id));
+      return this.documentToObject(question);
+    } catch (error) {
+      console.error('Error getting question:', error);
+      return undefined;
+    }
   }
   
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const [newQuestion] = await db.insert(questions).values(question).returning();
-    return newQuestion;
+    try {
+      const newQuestion = new Question(question);
+      await newQuestion.save();
+      return this.documentToObject(newQuestion);
+    } catch (error) {
+      console.error('Error creating question:', error);
+      throw error;
+    }
   }
   
   async updateQuestion(id: number, questionData: Partial<InsertQuestion>): Promise<Question | undefined> {
-    const [updatedQuestion] = await db
-      .update(questions)
-      .set(questionData)
-      .where(eq(questions.id, id))
-      .returning();
-    return updatedQuestion;
+    try {
+      const updatedQuestion = await Question.findByIdAndUpdate(
+        String(id),
+        { $set: questionData },
+        { new: true }
+      );
+      return this.documentToObject(updatedQuestion);
+    } catch (error) {
+      console.error('Error updating question:', error);
+      return undefined;
+    }
   }
   
   async deleteQuestion(id: number): Promise<boolean> {
-    const result = await db.delete(questions).where(eq(questions.id, id));
-    return result.rowCount > 0;
+    try {
+      const result = await Question.findByIdAndDelete(String(id));
+      return !!result;
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      return false;
+    }
   }
   
   async getAllQuestions(): Promise<Question[]> {
-    return db.select().from(questions);
+    try {
+      const questions = await Question.find();
+      return questions.map(question => this.documentToObject(question));
+    } catch (error) {
+      console.error('Error getting all questions:', error);
+      return [];
+    }
   }
   
   // Fisher-Yates algorithm for better randomization
@@ -405,75 +471,128 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRandomQuestions(count: number): Promise<Question[]> {
-    // For PostgreSQL we can use random() to get random questions
-    const allQuestions = await db
-      .select()
-      .from(questions)
-      .orderBy(sql`RANDOM()`)
-      .limit(count);
-    
-    // Then randomize options for each question
-    return allQuestions.map(q => this.randomizeOptions(q));
+    try {
+      // For MongoDB we can use aggregation with $sample to get random questions
+      const questions = await Question.aggregate([
+        { $sample: { size: count } }
+      ]);
+      
+      // Convert Mongoose documents to plain objects
+      const plainQuestions = questions.map(q => ({ ...q, id: q._id.toString() }));
+      
+      // Then randomize options for each question
+      return plainQuestions.map(q => this.randomizeOptions(q));
+    } catch (error) {
+      console.error('Error getting random questions:', error);
+      return [];
+    }
   }
   
   // Assessment operations
   async getAssessment(id: number): Promise<Assessment | undefined> {
-    const [assessment] = await db.select().from(assessments).where(eq(assessments.id, id));
-    return assessment;
+    try {
+      const assessment = await Assessment.findById(String(id));
+      return this.documentToObject(assessment);
+    } catch (error) {
+      console.error('Error getting assessment:', error);
+      return undefined;
+    }
   }
   
   async getAssessmentsByUser(userId: number): Promise<Assessment[]> {
-    return db.select().from(assessments).where(eq(assessments.userId, userId));
+    try {
+      const assessments = await Assessment.find({ userId: String(userId) });
+      return assessments.map(assessment => this.documentToObject(assessment));
+    } catch (error) {
+      console.error('Error getting assessments by user:', error);
+      return [];
+    }
   }
   
   async createAssessment(assessment: InsertAssessment): Promise<Assessment> {
-    const [newAssessment] = await db
-      .insert(assessments)
-      .values({
+    try {
+      const newAssessment = new Assessment({
         ...assessment,
         isComplete: false
-      })
-      .returning();
-    return newAssessment;
+      });
+      await newAssessment.save();
+      return this.documentToObject(newAssessment);
+    } catch (error) {
+      console.error('Error creating assessment:', error);
+      throw error;
+    }
   }
   
   async updateAssessment(id: number, data: Partial<Assessment>): Promise<Assessment | undefined> {
-    const [updatedAssessment] = await db
-      .update(assessments)
-      .set(data)
-      .where(eq(assessments.id, id))
-      .returning();
-    return updatedAssessment;
+    try {
+      const updatedAssessment = await Assessment.findByIdAndUpdate(
+        String(id),
+        { $set: data },
+        { new: true }
+      );
+      return this.documentToObject(updatedAssessment);
+    } catch (error) {
+      console.error('Error updating assessment:', error);
+      return undefined;
+    }
   }
   
   async getAllAssessments(): Promise<Assessment[]> {
-    return db.select().from(assessments);
+    try {
+      const assessments = await Assessment.find().populate('userId');
+      return assessments.map(assessment => this.documentToObject(assessment));
+    } catch (error) {
+      console.error('Error getting all assessments:', error);
+      return [];
+    }
   }
   
   // Answer operations
   async getAnswer(id: number): Promise<Answer | undefined> {
-    const [answer] = await db.select().from(answers).where(eq(answers.id, id));
-    return answer;
+    try {
+      const answer = await Answer.findById(String(id));
+      return this.documentToObject(answer);
+    } catch (error) {
+      console.error('Error getting answer:', error);
+      return undefined;
+    }
   }
   
   async getAnswersByAssessment(assessmentId: number): Promise<Answer[]> {
-    return db.select().from(answers).where(eq(answers.assessmentId, assessmentId));
+    try {
+      const answers = await Answer.find({ assessmentId });
+      return answers.map(answer => this.documentToObject(answer));
+    } catch (error) {
+      console.error('Error getting answers by assessment:', error);
+      return [];
+    }
   }
   
   async createAnswer(answer: InsertAnswer): Promise<Answer> {
-    const [newAnswer] = await db.insert(answers).values(answer).returning();
-    return newAnswer;
+    try {
+      const newAnswer = new Answer(answer);
+      await newAnswer.save();
+      return this.documentToObject(newAnswer);
+    } catch (error) {
+      console.error('Error creating answer:', error);
+      throw error;
+    }
   }
   
   async updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
-    const [updatedAnswer] = await db
-      .update(answers)
-      .set(data)
-      .where(eq(answers.id, id))
-      .returning();
-    return updatedAnswer;
+    try {
+      const updatedAnswer = await Answer.findByIdAndUpdate(
+        String(id),
+        { $set: data },
+        { new: true }
+      );
+      return this.documentToObject(updatedAnswer);
+    } catch (error) {
+      console.error('Error updating answer:', error);
+      return undefined;
+    }
   }
 }
 
-// Switch to database storage for persistence
-export const storage = new DatabaseStorage();
+// Switch to MongoDB storage for persistence
+export const storage = new MongoDBStorage();
