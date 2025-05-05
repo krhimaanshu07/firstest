@@ -7,6 +7,7 @@ import QuestionRenderer from "@/components/QuestionRenderer";
 import useTimer from "@/hooks/useTimer";
 import { Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { Question, Answer } from "@shared/schema";
+import BackButton from "@/components/BackButton";
 
 interface AssessmentResponse {
   assessmentId: string; // Updated to string for MongoDB compatibility
@@ -117,10 +118,6 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       setQuestions(assessmentData.questions || []);
       setIsCompleted(assessmentData.isComplete || false);
       
-      if (assessmentData.timeRemaining) {
-        updateTime(assessmentData.timeRemaining);
-      }
-      
       // Initialize user answers from existing studentAnswers in the questions
       const initialAnswers = new Map<string, string>();
       if (assessmentData.questions) {
@@ -133,7 +130,22 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       }
       setUserAnswers(initialAnswers);
       
-      startTimer();
+      // Initialize the timer with remaining time from the server
+      if (assessmentData.timeRemaining !== undefined) {
+        console.log("Setting timer to", assessmentData.timeRemaining, "seconds");
+        updateTime(assessmentData.timeRemaining);
+        
+        // Only start if it's not already complete
+        if (!assessmentData.isComplete) {
+          // Short delay to ensure the time is set before starting
+          setTimeout(() => {
+            startTimer();
+            console.log("Timer started with", assessmentData.timeRemaining, "seconds");
+          }, 100);
+        }
+      } else {
+        console.warn("No time remaining data received from server");
+      }
     }
   }, [assessmentData, startTimer, updateTime]);
 

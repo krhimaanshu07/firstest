@@ -41,16 +41,19 @@ export default function useTimer(initialSeconds = 0, onTimeUpdate?: (seconds: nu
       // Auto-save interval (every 30 seconds)
       if (onTimeUpdate) {
         autoSaveRef.current = setInterval(() => {
-          const currentTime = seconds;
-          // Only persist if time has changed by at least 10 seconds to reduce API calls
-          if (Math.abs(lastPersistedTimeRef.current - currentTime) >= 10) {
-            onTimeUpdate(currentTime);
-            lastPersistedTimeRef.current = currentTime;
-          }
+          // Get the current time directly from state using a callback
+          setSeconds(currentTime => {
+            // Only persist if time has changed by at least 10 seconds
+            if (Math.abs(lastPersistedTimeRef.current - currentTime) >= 10) {
+              onTimeUpdate(currentTime);
+              lastPersistedTimeRef.current = currentTime;
+            }
+            return currentTime; // Return unchanged to avoid re-render
+          });
         }, 30000);
       }
     }
-  }, [isRunning, clearIntervalRef, onTimeUpdate, seconds]);
+  }, [isRunning, clearIntervalRef, onTimeUpdate]);
 
   const pauseTimer = useCallback(() => {
     clearIntervalRef();
