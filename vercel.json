@@ -14,7 +14,7 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "MONGO_DB": "@mongo_db",
-    "SESSION_SECRET": "@session_secret"
+    "MONGO_DB": "@mongo-db",
+    "SESSION_SECRET": "@session-secret"
   }
 }
