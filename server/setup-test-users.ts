@@ -17,9 +17,16 @@ export async function createTestUsers() {
     const existingAdmin = await User.findOne({ username: 'admin' });
     if (!existingAdmin) {
       // Create admin user
+      const hashedPassword = await hashPassword('admin123');
+      console.log('Admin password hashed format:', { 
+        hasPassword: !!hashedPassword,
+        passwordLength: hashedPassword?.length,
+        containsDot: hashedPassword?.includes('.')
+      });
+      
       const adminUser = new User({
         username: 'admin',
-        password: await hashPassword('admin123'),
+        password: hashedPassword,
         role: 'admin',
         email: 'admin@example.com',
         registrationDate: new Date()
@@ -34,9 +41,16 @@ export async function createTestUsers() {
     const existingStudent = await User.findOne({ username: '2001086' });
     if (!existingStudent) {
       // Create student user
+      const hashedPassword = await hashPassword('password');
+      console.log('Student password hashed format:', { 
+        hasPassword: !!hashedPassword,
+        passwordLength: hashedPassword?.length,
+        containsDot: hashedPassword?.includes('.')
+      });
+      
       const studentUser = new User({
         username: '2001086',
-        password: await hashPassword('password'),
+        password: hashedPassword,
         role: 'student',
         email: 'student@example.com',
         studentId: '2001086',

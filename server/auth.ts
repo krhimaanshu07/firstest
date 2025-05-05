@@ -30,10 +30,28 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    // Make sure the stored password is in the correct format
+    if (!stored || !stored.includes('.')) {
+      console.error('Invalid password format:', stored);
+      return false;
+    }
+    
+    const [hashed, salt] = stored.split(".");
+    
+    // Validate both parts exist
+    if (!hashed || !salt) {
+      console.error('Invalid password parts:', { hashed: !!hashed, salt: !!salt });
+      return false;
+    }
+    
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error('Error comparing passwords:', error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -57,12 +75,30 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          console.log(`No user found with username: ${username}`);
+          return done(null, false);
+        }
+        
+        // Add debug info about the password format
+        console.log(`User found: ${username}, Password format check:`, {
+          hasPassword: !!user.password,
+          passwordLength: user.password?.length,
+          containsDot: user.password?.includes('.')
+        });
+        
+        // Try to validate the password
+        const isValid = await comparePasswords(password, user.password);
+        
+        if (!isValid) {
+          console.log(`Invalid password for user: ${username}`);
           return done(null, false);
         } else {
           return done(null, user);
         }
       } catch (error) {
+        console.error('Strategy error:', error);
         return done(error);
       }
     }),
@@ -131,19 +167,38 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+    try {
+      // Add better validation for login request
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
       }
       
-      req.login(user, (loginErr) => {
-        if (loginErr) return next(loginErr);
-        // Don't send the password back to the client
-        const { password, ...userWithoutPassword } = user;
-        return res.json(userWithoutPassword);
-      });
-    })(req, res, next);
+      passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
+        if (err) {
+          console.error('Authentication error:', err);
+          return res.status(500).json({ message: "Authentication error", details: err.message });
+        }
+        
+        if (!user) {
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+        
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            console.error('Login error:', loginErr);
+            return res.status(500).json({ message: "Login session error", details: loginErr.message });
+          }
+          
+          // Don't send the password back to the client
+          const { password, ...userWithoutPassword } = user;
+          return res.json(userWithoutPassword);
+        });
+      })(req, res, next);
+    } catch (error) {
+      console.error('Unexpected login error:', error);
+      return res.status(500).json({ message: "Server error during login" });
+    }
   });
 
   app.post("/api/auth/logout", (req, res, next) => {
