@@ -254,6 +254,23 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
 
     submitAnswerMutation.mutate({ questionId, answer });
   };
+  
+  // Handle clearing an answer
+  const handleClearAnswer = (questionId: number) => {
+    setUserAnswers(prev => {
+      const updated = new Map(prev);
+      updated.delete(questionId);
+      return updated;
+    });
+    
+    // Submit empty string to clear the answer on the server
+    submitAnswerMutation.mutate({ questionId, answer: "" });
+    
+    toast({
+      title: "Response Cleared",
+      description: "Your answer has been cleared",
+    });
+  };
 
   // Navigation handlers
   const handlePrevQuestion = () => {
@@ -408,6 +425,7 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
                 question={currentQuestion}
                 selectedAnswer={userAnswers.get(currentQuestion.id)}
                 onSelectAnswer={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+                onClearAnswer={() => handleClearAnswer(currentQuestion.id)}
               />
             </div>
 

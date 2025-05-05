@@ -9,17 +9,28 @@ interface QuestionRendererProps {
   question: Question;
   selectedAnswer?: string;
   onSelectAnswer: (answer: string) => void;
+  onClearAnswer?: () => void;
 }
 
 const QuestionRenderer: FC<QuestionRendererProps> = ({
   question,
   selectedAnswer,
   onSelectAnswer,
+  onClearAnswer,
 }) => {
   const [codeAnswer, setCodeAnswer] = useState(selectedAnswer || "");
 
   const handleSubmitCode = () => {
     onSelectAnswer(codeAnswer);
+  };
+  
+  const handleClearAnswer = () => {
+    if (onClearAnswer) {
+      onClearAnswer();
+    } else if (question.type === "code") {
+      setCodeAnswer("");
+      onSelectAnswer("");
+    }
   };
 
   if (question.type === "multiple-choice") {
@@ -43,6 +54,17 @@ const QuestionRenderer: FC<QuestionRendererProps> = ({
             </div>
           ))}
         </RadioGroup>
+        
+        {selectedAnswer && (
+          <Button 
+            onClick={handleClearAnswer} 
+            variant="outline" 
+            className="mt-2"
+            size="sm"
+          >
+            Clear Response
+          </Button>
+        )}
       </div>
     );
   } else if (question.type === "code") {
@@ -60,9 +82,22 @@ const QuestionRenderer: FC<QuestionRendererProps> = ({
           className="font-mono mb-4"
         />
 
-        <Button onClick={handleSubmitCode} className="w-full">
-          Submit Code
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button onClick={handleSubmitCode} className="w-full">
+            Submit Code
+          </Button>
+          
+          {codeAnswer && (
+            <Button 
+              onClick={handleClearAnswer} 
+              variant="outline" 
+              className="w-full"
+              size="sm"
+            >
+              Clear Response
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
