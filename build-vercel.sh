@@ -1,32 +1,36 @@
 #!/usr/bin/env bash
 set -e
 
-# 1. Build the frontend
-echo "▶ Building frontend…"
+# 1. Run your existing build (Vite → dist/public)
+echo "▶ Running npm build script…"
 npm run build
 
-# 2. Clean and recreate dist folders
-echo "▶ Preparing dist directories…"
-rm -rf dist
-mkdir -p dist/public
-mkdir -p dist/server
-mkdir -p dist/shared
+# 2. Clean only dist/server & dist/shared (keep dist/public intact)
+echo "▶ Cleaning server/shared directories…"
+rm -rf dist/server dist/shared
+mkdir -p dist/server dist/shared
 
-# 3. Copy frontend output into dist/public
-echo "▶ Copying frontend assets…"
-cp -R build/* dist/public/
+# 3. Compile server & shared TS (override noEmit)
+echo "▶ Compiling server TypeScript…"
+tsc \
+  --project tsconfig.json \
+  --rootDir server \
+  --outDir dist/server \
+  --noEmit false
 
-# 4. Compile server and shared TypeScript to dist
-echo "▶ Compiling server and shared TS…"
-tsc --project tsconfig.json --outDir dist/server --rootDir server
-tsc --project tsconfig.json --outDir dist/shared --rootDir shared
+echo "▶ Compiling shared TypeScript…"
+tsc \
+  --project tsconfig.json \
+  --rootDir shared \
+  --outDir dist/shared \
+  --noEmit false
 
-# 5. Copy any raw JS server files you might have
+# 4. Copy any raw JS server files
 echo "▶ Copying extra JS server files…"
-cp -r server/*.js dist/server/ 2>/dev/null || true
+cp -R server/*.js dist/server/ 2>/dev/null || true
 
-# 6. Ensure shared modules export correctly for Node
-echo "▶ Adding module.exports to shared .js files if missing…"
+# 5. Ensure shared modules export correctly for Node
+echo "▶ Patching shared modules for CommonJS…"
 for file in dist/shared/*.js; do
   if [ -f "$file" ] && ! grep -q "module.exports" "$file"; then
     exports=$(
