@@ -1,14 +1,20 @@
 {
   "version": 2,
-  "buildCommand": "./build-vercel.sh",
+  "buildCommand": "bash build-vercel.sh",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/[...slug].js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/[...slug].js" },
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/(.*)",      "dest": "/$1" }
   ],
   "env": {
     "NODE_ENV": "production",
-    "MONGO_DB": "mongodb+srv://vermaravifzd022:10EULEvReB6fdhyW@cluster0.g2bvjbh.mongodb.net",
-    "SESSION_SECRET": "computer-science-assessment-secret"
+    "MONGO_DB": "@mongo_db",
+    "SESSION_SECRET": "@session_secret"
   }
 }
