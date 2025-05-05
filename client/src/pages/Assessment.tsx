@@ -8,11 +8,18 @@ import useTimer from "@/hooks/useTimer";
 import { Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { Question, Answer } from "@shared/schema";
 
-interface AssessmentProps {
+interface AssessmentResponse {
+  assessmentId: number;
+  questions?: Question[];
+  isComplete?: boolean;
+  timeRemaining?: number;
+}
+
+interface StudentAssessmentProps {
   onLogout: () => Promise<void>;
 }
 
-export default function Assessment({ onLogout }: AssessmentProps) {
+export default function Assessment({ onLogout }: StudentAssessmentProps) {
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [assessmentId, setAssessmentId] = useState<number | null>(null);
@@ -27,8 +34,18 @@ export default function Assessment({ onLogout }: AssessmentProps) {
     isLoading: isStartingAssessment,
     isError: startError,
     error: startErrorDetails
-  } = useQuery({
+  } = useQuery<AssessmentResponse>({
     queryKey: ['/api/assessments/start'],
+    queryFn: async (): Promise<AssessmentResponse> => {
+      const response = await fetch('/api/assessments/start', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to start assessment');
+      }
+      return response.json();
+    },
     enabled: true,
     retry: 1,
     staleTime: Infinity
@@ -72,9 +89,20 @@ export default function Assessment({ onLogout }: AssessmentProps) {
 
     const intervalId = setInterval(async () => {
       try {
-        await apiRequest("PUT", `/api/assessments/${assessmentId}/update-timer`, {
-          timeRemaining
+        const response = await fetch(`/api/assessments/${assessmentId}/update-timer`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            timeRemaining
+          })
         });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update timer');
+        }
       } catch (error) {
         console.error("Failed to update timer:", error);
       }
@@ -94,11 +122,24 @@ export default function Assessment({ onLogout }: AssessmentProps) {
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer }: { questionId: number, answer: string }) => {
-      return apiRequest("POST", `/api/assessments/${assessmentId}/submit-answer`, {
-        assessmentId,
-        questionId,
-        answer
-      }).then(res => res.json());
+      const response = await fetch(`/api/assessments/${assessmentId}/submit-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          assessmentId,
+          questionId,
+          answer
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit answer');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -128,9 +169,22 @@ export default function Assessment({ onLogout }: AssessmentProps) {
   // Complete assessment (when time runs out)
   const completeAssessmentMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("PUT", `/api/assessments/${assessmentId}/update-timer`, {
-        timeRemaining: 0
-      }).then(res => res.json());
+      const response = await fetch(`/api/assessments/${assessmentId}/update-timer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          timeRemaining: 0
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to complete assessment');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       setIsCompleted(true);
@@ -171,9 +225,24 @@ export default function Assessment({ onLogout }: AssessmentProps) {
   const handleLogout = async () => {
     if (assessmentId && !isCompleted) {
       // Save current timer before logging out
-      await apiRequest("PUT", `/api/assessments/${assessmentId}/update-timer`, {
-        timeRemaining
-      });
+      try {
+        const response = await fetch(`/api/assessments/${assessmentId}/update-timer`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            timeRemaining
+          })
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to update timer before logout');
+        }
+      } catch (error) {
+        console.error('Error saving timer before logout:', error);
+      }
     }
     
     await onLogout();
