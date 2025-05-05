@@ -107,6 +107,12 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
   // Initialize assessment data
   useEffect(() => {
     if (assessmentData) {
+      // Check if user is restricted from taking assessment
+      if (assessmentData.isRestricted) {
+        // This will be handled in the render method
+        return;
+      }
+      
       setAssessmentId(assessmentData.assessmentId);
       setQuestions(assessmentData.questions || []);
       setIsCompleted(assessmentData.isComplete || false);
@@ -430,6 +436,53 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
           <Button onClick={() => window.location.reload()}>
             Try Again
           </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Restricted assessment state (when student has already completed an assessment recently)
+  if (assessmentData?.isRestricted) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-neutral-800">Assessment Restricted</h1>
+          <Button variant="destructive" onClick={handleLogout}>
+            Logout
+          </Button>
+        </header>
+        
+        <div className="p-6 max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-md p-10 text-center">
+            <h2 className="text-2xl font-bold text-neutral-800 mb-4">
+              You've recently completed an assessment
+            </h2>
+            
+            <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6 inline-flex items-center flex-col">
+              <Clock className="h-12 w-12 text-yellow-600 mb-4" />
+              <p className="text-yellow-800 text-lg font-medium mb-2">
+                Please wait before starting a new assessment
+              </p>
+              <p className="text-yellow-700">
+                {assessmentData.message || "You need to wait before taking another assessment"}
+              </p>
+              {assessmentData.waitTime && (
+                <div className="mt-4 bg-white rounded-full px-6 py-3 border border-yellow-200">
+                  <span className="font-bold">
+                    {assessmentData.waitTime.hours} hours and {assessmentData.waitTime.minutes} minutes remaining
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-neutral-600 mb-6">
+              This restriction is in place to maintain the integrity of the assessment process.
+            </p>
+            
+            <Button onClick={handleLogout} className="px-8">
+              Return to Login
+            </Button>
+          </div>
         </div>
       </div>
     );
