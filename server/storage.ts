@@ -108,9 +108,10 @@ export class MemStorage implements IStorage {
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.userId++;
+    const idNum = this.userId++;
+    const id = idNum.toString(); // Convert to string for MongoDB compatibility
     const newUser: User = { ...user, id, registrationDate: new Date() };
-    this.users.set(id, newUser);
+    this.users.set(idNum, newUser);
     return newUser;
   }
   
@@ -124,9 +125,9 @@ export class MemStorage implements IStorage {
   }
   
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const id = this.questionId++;
+    const id = this.questionId++.toString(); // Convert to string for MongoDB compatibility
     const newQuestion: Question = { ...question, id };
-    this.questions.set(id, newQuestion);
+    this.questions.set(parseInt(id), newQuestion);
     return newQuestion;
   }
   

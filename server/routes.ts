@@ -224,11 +224,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Make sure userId is a string when passed to MongoDB
       const userIdStr = userId.toString();
       
-      const assessment = await storage.createAssessment({
-        userId: userIdStr,
-        startTime: new Date(),
-        timeRemaining: DEFAULT_ASSESSMENT_TIME
-      });
+      // Create assessment
+      let assessment;
+      try {
+        assessment = await storage.createAssessment({
+          userId: userIdStr,
+          startTime: new Date(),
+          timeRemaining: DEFAULT_ASSESSMENT_TIME
+        });
+      } catch (error) {
+        console.error("Error creating assessment:", error);
+        return res.status(500).json({ message: "Failed to create assessment" });
+      }
 
       // Get 40 questions for the assessment
       const questions = await storage.getRandomQuestions(40);
@@ -294,8 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update existing answer
         const isCorrect = answerData.answer === question.correctAnswer;
         await storage.updateAnswer(alreadyAnswered.id, {
-          assessmentId: assessmentId,
-          questionId: answerData.questionId,
+          assessmentId: assessmentId.toString(),
+          questionId: answerData.questionId.toString(),
           answer: answerData.answer,
           isCorrect
         });
@@ -303,8 +310,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create new answer
         const isCorrect = answerData.answer === question.correctAnswer;
         await storage.createAnswer({
-          assessmentId: assessmentId,
-          questionId: answerData.questionId,
+          assessmentId: assessmentId.toString(),
+          questionId: answerData.questionId.toString(),
           answer: answerData.answer,
           isCorrect
         });
