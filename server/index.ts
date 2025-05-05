@@ -42,6 +42,10 @@ app.use((req, res, next) => {
   // Connect to MongoDB
   await connectToMongoDB();
   
+  // Create test users after MongoDB is connected
+  const { createTestUsers } = await import('./setup-test-users');
+  await createTestUsers();
+  
   // Setup authentication
   setupAuth(app);
   
