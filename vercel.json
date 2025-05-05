@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "./build-script.sh",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/server" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/server": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
+}
