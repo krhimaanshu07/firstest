@@ -33,7 +33,7 @@ export default function ResultsManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Fetch assessment results
-  const { data: assessments = [], isLoading } = useQuery({
+  const { data: assessments = [], isLoading } = useQuery<EnhancedAssessment[]>({
     queryKey: ['/api/assessments']
   });
   
@@ -63,9 +63,9 @@ export default function ResultsManagement() {
   const completedAssessments = assessments.filter((assessment: EnhancedAssessment) => assessment.isComplete);
   
   // Format time spent (in seconds) to HH:MM:SS
-  const formatTimeSpent = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+  const formatTimeSpent = (startTime: string | Date, endTime: string | Date) => {
+    const start = startTime instanceof Date ? startTime : new Date(startTime);
+    const end = endTime instanceof Date ? endTime : new Date(endTime);
     const diffSeconds = Math.floor((end.getTime() - start.getTime()) / 1000);
     
     const hours = Math.floor(diffSeconds / 3600);

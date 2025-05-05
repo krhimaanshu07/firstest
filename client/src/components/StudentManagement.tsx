@@ -27,12 +27,12 @@ export default function StudentManagement() {
   const [currentStudent, setCurrentStudent] = useState<User | null>(null);
   
   // Fetch students
-  const { data: students = [], isLoading } = useQuery({
+  const { data: students = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/students'],
   });
   
   // Register student mutation
-  const registerStudentMutation = useMutation({
+  const registerStudentMutation = useMutation<User, Error, any>({
     mutationFn: async (studentData: any) => {
       return apiRequest("POST", "/api/students/register", studentData).then(res => res.json());
     },
@@ -54,7 +54,7 @@ export default function StudentManagement() {
   });
   
   // Delete student mutation
-  const deleteStudentMutation = useMutation({
+  const deleteStudentMutation = useMutation<{message: string}, Error, string>({
     mutationFn: async (studentId: string) => {
       return apiRequest("DELETE", `/api/students/${studentId}`).then(res => res.json());
     },
