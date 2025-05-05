@@ -80,7 +80,9 @@ export const insertAnswerSchema = createInsertSchema(answers).pick({
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
-export type Question = typeof questions.$inferSelect;
+export type Question = typeof questions.$inferSelect & { 
+  studentAnswer?: string;  // Only used on the client, not stored in DB 
+};
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 
 export type Assessment = typeof assessments.$inferSelect;
