@@ -63,6 +63,11 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Make sure we have a session secret
+  if (!process.env.SESSION_SECRET) {
+    console.warn('SESSION_SECRET not set in environment variables, using default');
+  }
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'computer-science-assessment-secret',
     resave: false,
