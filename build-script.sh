@@ -9,10 +9,14 @@ npm run build
 echo "Building server components..."
 npx esbuild server/**/*.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist
 
-# Copy API files directly (no need to bundle)
-echo "Copying API files..."
-cp -r api dist/
+# Prepare API serverless functions
+echo "Preparing API serverless functions..."
+mkdir -p dist/api
+cp api/api.js dist/api/
+cp api/hello.js dist/api/
 
-# Make sure the files are executable
-chmod +x dist/api/index.js
-chmod +x dist/api/server.js
+# Make sure the API files are executable
+chmod +x dist/api/api.js
+chmod +x dist/api/hello.js
+
+echo "Build completed successfully"
