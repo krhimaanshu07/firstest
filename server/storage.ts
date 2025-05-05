@@ -21,6 +21,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByStudentId(studentId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  deleteUser(id: string | number): Promise<boolean>;
   getAllStudents(): Promise<User[]>;
   
   // Question operations
@@ -36,6 +37,7 @@ export interface IStorage {
   getAssessmentsByUser(userId: string | number): Promise<Assessment[]>;
   createAssessment(assessment: InsertAssessment): Promise<Assessment>;
   updateAssessment(id: string | number, data: Partial<Assessment>): Promise<Assessment | undefined>;
+  deleteAssessment(id: string | number): Promise<boolean>;
   getAllAssessments(): Promise<Assessment[]>;
   
   // Answer operations
@@ -43,6 +45,7 @@ export interface IStorage {
   getAnswersByAssessment(assessmentId: string | number): Promise<Answer[]>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
   updateAnswer(id: string | number, data: Partial<InsertAnswer>): Promise<Answer | undefined>;
+  deleteAnswer(id: string | number): Promise<boolean>;
   
   // Session store for authentication
   sessionStore: session.Store;

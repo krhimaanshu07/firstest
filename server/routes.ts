@@ -95,6 +95,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a student
+  app.delete("/api/students/:id", requireAdmin, async (req, res) => {
+    try {
+      const studentId = req.params.id;
+      
+      // First get the student to make sure they exist
+      const student = await storage.getUser(studentId);
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      // Make sure we're not deleting an admin
+      if (student.role === "admin") {
+        return res.status(403).json({ message: "Cannot delete admin users" });
+      }
+      
+      // Delete the student's assessments
+      const assessments = await storage.getAssessmentsByUser(studentId);
+      for (const assessment of assessments) {
+        // Delete answers for each assessment
+        const answers = await storage.getAnswersByAssessment(assessment.id);
+        for (const answer of answers) {
+          await storage.deleteAnswer(answer.id);
+        }
+        // Delete the assessment
+        await storage.deleteAssessment(assessment.id);
+      }
+      
+      // Delete the student
+      const success = await storage.deleteUser(studentId);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete student" });
+      }
+      
+      return res.status(200).json({ message: "Student deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Question management routes
   app.post("/api/questions", requireAdmin, async (req, res) => {
     try {
@@ -581,6 +622,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(enhancedAssessments);
     } catch (error) {
       console.error("Error getting all assessments:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Delete all assessments (admin only)
+  app.delete("/api/assessments", requireAdmin, async (req, res) => {
+    try {
+      // Get all assessments
+      const assessments = await storage.getAllAssessments();
+      
+      // For each assessment, delete all answers
+      for (const assessment of assessments) {
+        const answers = await storage.getAnswersByAssessment(assessment.id);
+        for (const answer of answers) {
+          await storage.deleteAnswer(answer.id);
+        }
+        // Delete the assessment
+        await storage.deleteAssessment(assessment.id);
+      }
+      
+      return res.status(200).json({ message: "All assessments deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting assessments:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });
