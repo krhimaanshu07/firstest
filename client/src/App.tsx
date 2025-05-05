@@ -121,14 +121,14 @@ function App() {
             <Route path="/admin"><AdminDashboard onLogout={logout} /></Route>
           )}
           {isAuthenticated && user?.role === "student" && (
-            <Route path="/assessment" component={Assessment} />
+            <Route path="/assessment"><Assessment onLogout={logout} /></Route>
           )}
           <Route path="/">
             {isAuthenticated ? (
               user?.role === "admin" ? (
                 <AdminDashboard onLogout={logout} />
               ) : (
-                <Assessment />
+                <Assessment onLogout={logout} />
               )
             ) : (
               <Login onLogin={login} />

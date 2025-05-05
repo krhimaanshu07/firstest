@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuthContext } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
@@ -9,8 +8,11 @@ import useTimer from "@/hooks/useTimer";
 import { Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { Question, Answer } from "@shared/schema";
 
-export default function Assessment() {
-  const { logout } = useAuthContext();
+interface AssessmentProps {
+  onLogout: () => Promise<void>;
+}
+
+export default function Assessment({ onLogout }: AssessmentProps) {
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [assessmentId, setAssessmentId] = useState<number | null>(null);
@@ -174,7 +176,7 @@ export default function Assessment() {
       });
     }
     
-    await logout();
+    await onLogout();
   };
 
   // Show loading state
