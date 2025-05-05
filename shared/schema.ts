@@ -1,10 +1,16 @@
 import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { Types } from "mongoose";
+
+// Define custom Zod schemas for MongoDB
+const ObjectIdSchema = z.instanceof(Types.ObjectId).or(z.string().transform(val => 
+  typeof val === 'string' ? new Types.ObjectId(val) : val
+));
 
 // User schema (both admin and students)
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(), // Using string for MongoDB ObjectIds
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("student"),
@@ -13,17 +19,18 @@ export const users = pgTable("users", {
   registrationDate: timestamp("registration_date").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  role: true,
-  email: true,
-  studentId: true,
+// Custom user schema for MongoDB that better matches our models
+export const insertUserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  role: z.string().default("student"),
+  email: z.string().optional(),
+  studentId: z.string().optional(),
 });
 
 // Questions schema
 export const questions = pgTable("questions", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(), // Using string for MongoDB ObjectIds
   title: text("title").notNull(),
   content: text("content").notNull(),
   type: text("type").notNull(), // multiple-choice, code
@@ -33,20 +40,21 @@ export const questions = pgTable("questions", {
   correctAnswer: text("correct_answer").notNull(),
 });
 
-export const insertQuestionSchema = createInsertSchema(questions).pick({
-  title: true,
-  content: true,
-  type: true,
-  category: true,
-  difficulty: true,
-  options: true,
-  correctAnswer: true,
+// Custom question schema for MongoDB that better matches our models
+export const insertQuestionSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  type: z.string().min(1),
+  category: z.string().min(1),
+  difficulty: z.string().default("medium"),
+  options: z.array(z.string()), // Required field
+  correctAnswer: z.string().min(1),
 });
 
 // Assessments schema
 export const assessments = pgTable("assessments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: text("id").primaryKey(), // Using string for MongoDB ObjectIds
+  userId: text("user_id").notNull(), // Foreign key to users
   startTime: timestamp("start_time").notNull().defaultNow(),
   endTime: timestamp("end_time"),
   timeRemaining: integer("time_remaining"), // in seconds
@@ -54,26 +62,28 @@ export const assessments = pgTable("assessments", {
   score: integer("score"),
 });
 
-export const insertAssessmentSchema = createInsertSchema(assessments).pick({
-  userId: true,
-  startTime: true,
-  timeRemaining: true,
+// Custom assessment schema for MongoDB that better matches our models
+export const insertAssessmentSchema = z.object({
+  userId: z.string().min(1),
+  startTime: z.date().optional().default(() => new Date()),
+  timeRemaining: z.number().optional(),
 });
 
 // Assessment answers schema
 export const answers = pgTable("answers", {
-  id: serial("id").primaryKey(),
-  assessmentId: integer("assessment_id").notNull(),
-  questionId: integer("question_id").notNull(),
+  id: text("id").primaryKey(), // Using string for MongoDB ObjectIds
+  assessmentId: text("assessment_id").notNull(), // Foreign key to assessments
+  questionId: text("question_id").notNull(), // Foreign key to questions
   answer: text("answer"),
   isCorrect: boolean("is_correct"),
 });
 
-export const insertAnswerSchema = createInsertSchema(answers).pick({
-  assessmentId: true,
-  questionId: true,
-  answer: true,
-  isCorrect: true,
+// Custom answer schema for MongoDB that better matches our models
+export const insertAnswerSchema = z.object({
+  assessmentId: z.string().min(1),
+  questionId: z.string().min(1),
+  answer: z.string().optional(),
+  isCorrect: z.boolean().optional().default(false),
 });
 
 // Type exports

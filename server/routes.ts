@@ -281,14 +281,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update existing answer
         const isCorrect = answerData.answer === question.correctAnswer;
         await storage.updateAnswer(alreadyAnswered.id, {
-          ...answerData,
+          assessmentId: assessmentId,
+          questionId: answerData.questionId,
+          answer: answerData.answer,
           isCorrect
         });
       } else {
         // Create new answer
         const isCorrect = answerData.answer === question.correctAnswer;
         await storage.createAnswer({
-          ...answerData,
+          assessmentId: assessmentId,
+          questionId: answerData.questionId,
+          answer: answerData.answer,
           isCorrect
         });
       }
