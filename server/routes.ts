@@ -237,18 +237,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/assessments/:id/submit-answer", requireAuth, async (req, res) => {
     try {
-      const assessmentId = parseInt(req.params.id);
-      if (isNaN(assessmentId)) {
-        return res.status(400).json({ message: "Invalid assessment ID" });
-      }
-
+      const assessmentId = req.params.id;
+      
       // Verify it's the student's own assessment
       const assessment = await storage.getAssessment(assessmentId);
       if (!assessment) {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.user.id) {
+      // Use string comparison for MongoDB IDs
+      const userIdStr = req.user?.id?.toString();
+      const assessmentUserIdStr = assessment.userId?.toString();
+      
+      if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to submit answer to this assessment" });
       }
 
@@ -267,7 +268,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if already answered
       const existingAnswers = await storage.getAnswersByAssessment(assessmentId);
-      const alreadyAnswered = existingAnswers.find(a => a.questionId === answerData.questionId);
+      
+      // Find by comparing string representation of IDs
+      const alreadyAnswered = existingAnswers.find(a => 
+        a.questionId.toString() === answerData.questionId.toString()
+      );
       
       if (alreadyAnswered) {
         // Update existing answer
@@ -322,10 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/assessments/:id/update-timer", requireAuth, async (req, res) => {
     try {
-      const assessmentId = parseInt(req.params.id);
-      if (isNaN(assessmentId)) {
-        return res.status(400).json({ message: "Invalid assessment ID" });
-      }
+      const assessmentId = req.params.id;
 
       // Validate time remaining
       const { timeRemaining } = req.body;
@@ -339,7 +341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.user.id) {
+      // Use string comparison for MongoDB IDs
+      const userIdStr = req.user?.id?.toString();
+      const assessmentUserIdStr = assessment.userId?.toString();
+      
+      if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to update this assessment" });
       }
 
@@ -383,10 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete an assessment manually
   app.post("/api/assessments/:id/complete", requireAuth, async (req, res) => {
     try {
-      const assessmentId = parseInt(req.params.id);
-      if (isNaN(assessmentId)) {
-        return res.status(400).json({ message: "Invalid assessment ID" });
-      }
+      const assessmentId = req.params.id;
 
       // Verify it's the student's own assessment
       const assessment = await storage.getAssessment(assessmentId);
@@ -394,7 +397,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.user.id) {
+      // Use string comparison for MongoDB IDs
+      const userIdStr = req.user?.id?.toString();
+      const assessmentUserIdStr = assessment.userId?.toString();
+      
+      if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to complete this assessment" });
       }
 
@@ -439,18 +446,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const assessmentId = parseInt(req.params.id);
-      if (isNaN(assessmentId)) {
-        return res.status(400).json({ message: "Invalid assessment ID" });
-      }
+      const assessmentId = req.params.id;
 
       const assessment = await storage.getAssessment(assessmentId);
       if (!assessment) {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
+      // Use string comparison for MongoDB IDs
+      const userIdStr = req.user.id.toString();
+      const assessmentUserIdStr = assessment.userId.toString();
+      
       // Only allow access to the student's own assessment or admin
-      if (assessment.userId !== req.user.id && req.user.role !== 'admin') {
+      if (assessmentUserIdStr !== userIdStr && req.user.role !== 'admin') {
         return res.status(403).json({ message: "Not authorized to view this assessment" });
       }
 
@@ -473,7 +481,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Enhance with user information and answer counts
       const enhancedAssessments = await Promise.all(assessments.map(async (assessment) => {
-        const user = await storage.getUser(assessment.userId);
+        // Convert MongoDB ObjectId to string for storage.getUser
+        const userIdStr = assessment.userId.toString();
+        const user = await storage.getUser(userIdStr);
         const answers = await storage.getAnswersByAssessment(assessment.id);
         
         return {

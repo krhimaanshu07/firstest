@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-// Define the User type
+// Define the User type (updated for MongoDB)
 interface User {
-  id: number;
+  id: string;
   username: string;
   role: string;
   studentId?: string;
