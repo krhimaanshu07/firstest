@@ -118,7 +118,7 @@ function App() {
         <Toaster />
         <Switch>
           {isAuthenticated && user?.role === "admin" && (
-            <Route path="/admin" component={AdminDashboard} />
+            <Route path="/admin"><AdminDashboard onLogout={logout} /></Route>
           )}
           {isAuthenticated && user?.role === "student" && (
             <Route path="/assessment" component={Assessment} />
@@ -126,7 +126,7 @@ function App() {
           <Route path="/">
             {isAuthenticated ? (
               user?.role === "admin" ? (
-                <AdminDashboard />
+                <AdminDashboard onLogout={logout} />
               ) : (
                 <Assessment />
               )

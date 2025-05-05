@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuthContext } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import AdminTabs from "@/components/AdminTabs";
 import QuestionManagement from "@/components/QuestionManagement";
@@ -9,13 +8,16 @@ import { Button } from "@/components/ui/button";
 
 type TabType = "questions" | "students" | "results";
 
-export default function AdminDashboard() {
-  const { logout } = useAuthContext();
+interface AdminDashboardProps {
+  onLogout: () => Promise<void>;
+}
+
+export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>("questions");
 
   const handleLogout = async () => {
-    await logout();
+    await onLogout();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
