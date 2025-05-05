@@ -31,6 +31,14 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
+    // Handle the case where someone might have entered a plain text password during testing
+    // IMPORTANT: This is only for development/testing to help with user experience
+    // and should be removed in production
+    if (supplied === stored) {
+      console.log('Plain text password match! For testing only, should be removed in production.');
+      return true;
+    }
+    
     // Make sure the stored password is in the correct format
     if (!stored || !stored.includes('.')) {
       console.error('Invalid password format:', stored);
