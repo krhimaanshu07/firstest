@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Question } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, BookA } from "lucide-react";
 import AddQuestionForm from "./AddQuestionForm";
 import {
   Dialog,
@@ -105,6 +105,27 @@ export default function QuestionManagement() {
     }
   });
   
+  // Add CS questions mutation
+  const addCSQuestionsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/questions/add-cs-questions").then(res => res.json());
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/questions'] });
+      toast({
+        title: "CS Questions Added",
+        description: `Successfully added ${data.count || 'multiple'} computer science questions to the database.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to add CS questions",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+  
   const handleAddQuestion = (questionData: Omit<Question, 'id'>) => {
     addQuestionMutation.mutate(questionData);
   };
@@ -128,10 +149,24 @@ export default function QuestionManagement() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-neutral-800">Question Management</h2>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="h-5 w-5 mr-1" />
-          Add Question
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline"
+            onClick={() => addCSQuestionsMutation.mutate()}
+            disabled={addCSQuestionsMutation.isPending}
+          >
+            {addCSQuestionsMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <BookA className="h-5 w-5 mr-1" />
+            )}
+            Add CS Questions
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="h-5 w-5 mr-1" />
+            Add Question
+          </Button>
+        </div>
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">
