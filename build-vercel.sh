@@ -29,7 +29,18 @@ for file in dist/shared/*.ts; do
     sed -i 's/import \(.*\) from "\(.*\)";/const \1 = require("\2");/g' "$file"
     
     # Add module.exports at the end of file if it doesn't exist
-    grep -q "module.exports" "$file" || echo "module.exports = { $(grep -o "export [a-zA-Z]* [a-zA-Z]*" "$file" | sed 's/export //g' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g') };" >> "$file"
+    if ! grep -q "module.exports" "$file"; then
+      # Extract all TS exports into a comma-separated list
+      exports=$(
+        grep -o 'export [A-Za-z]* [A-Za-z]*' "$file" \
+        | sed 's/export //g' \
+        | tr '\n' ',' \
+        | sed 's/,$//' \
+        | sed 's/,/, /g'
+      )
+      # Safely echo with single quotes around the message
+      echo 'module.exports = { '"$exports"' };' >> "$file"
+    fi
     
     # Rename .ts to .js
     mv "$file" "${file%.ts}.js"
