@@ -22,8 +22,8 @@ interface StudentAssessmentProps {
 export default function Assessment({ onLogout }: StudentAssessmentProps) {
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [assessmentId, setAssessmentId] = useState<number | null>(null);
-  const [userAnswers, setUserAnswers] = useState<Map<number, string>>(new Map());
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Map<string, string>>(new Map());
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState<number | null>(null);

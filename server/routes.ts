@@ -170,6 +170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assessment routes
   app.post("/api/assessments/start", requireAuth, async (req, res) => {
     try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       // Only students can take assessments
       if (req.user.role !== "student") {
         return res.status(403).json({ message: "Only students can take assessments" });
@@ -216,8 +221,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start a new assessment
       const DEFAULT_ASSESSMENT_TIME = TWO_HOURS_IN_SECONDS; // 2 hours in seconds
       
+      // Make sure userId is a string when passed to MongoDB
+      const userIdStr = userId.toString();
+      
       const assessment = await storage.createAssessment({
-        userId,
+        userId: userIdStr,
         startTime: new Date(),
         timeRemaining: DEFAULT_ASSESSMENT_TIME
       });
@@ -240,6 +248,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/assessments/:id/submit-answer", requireAuth, async (req, res) => {
     try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const assessmentId = req.params.id;
       
       // Verify it's the student's own assessment
@@ -249,8 +262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use string comparison for MongoDB IDs
-      const userIdStr = req.user?.id?.toString();
-      const assessmentUserIdStr = assessment.userId?.toString();
+      const userIdStr = req.user.id.toString();
+      const assessmentUserIdStr = assessment.userId.toString();
       
       if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to submit answer to this assessment" });
@@ -334,6 +347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/assessments/:id/update-timer", requireAuth, async (req, res) => {
     try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const assessmentId = req.params.id;
 
       // Validate time remaining
@@ -349,8 +367,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use string comparison for MongoDB IDs
-      const userIdStr = req.user?.id?.toString();
-      const assessmentUserIdStr = assessment.userId?.toString();
+      const userIdStr = req.user.id.toString();
+      const assessmentUserIdStr = assessment.userId.toString();
       
       if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to update this assessment" });
@@ -396,6 +414,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete an assessment manually
   app.post("/api/assessments/:id/complete", requireAuth, async (req, res) => {
     try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const assessmentId = req.params.id;
 
       // Verify it's the student's own assessment
@@ -405,8 +428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use string comparison for MongoDB IDs
-      const userIdStr = req.user?.id?.toString();
-      const assessmentUserIdStr = assessment.userId?.toString();
+      const userIdStr = req.user.id.toString();
+      const assessmentUserIdStr = assessment.userId.toString();
       
       if (assessmentUserIdStr !== userIdStr) {
         return res.status(403).json({ message: "Not authorized to complete this assessment" });
