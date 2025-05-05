@@ -1,18 +1,26 @@
 {
-{
   "version": 2,
-  "buildCommand": "bash build-vercel.sh",
-  "outputDirectory": "dist/public",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist/public" }
+    },
+    {
+      "src": "api/[...slug].js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/[...slug].js" },
+    { "src": "/(.*)",      "dest": "/$1" }
+  ],
   "functions": {
     "api/[...slug].js": {
       "memory": 1024,
       "maxDuration": 10
     }
   },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/[...slug].js" },
-    { "src": "/(.*)",      "dest": "/$1" }
-  ],
   "env": {
     "NODE_ENV": "production",
     "MONGO_DB": "MONGO_DB",
