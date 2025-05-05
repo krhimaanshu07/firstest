@@ -458,7 +458,10 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     return (
       <div className="min-h-screen bg-background">
         <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-neutral-800">Assessment Restricted</h1>
+          <div className="flex items-center space-x-4">
+            <BackButton to="/" />
+            <h1 className="text-xl font-semibold text-neutral-800">Assessment Restricted</h1>
+          </div>
           <Button variant="destructive" onClick={handleLogout}>
             Logout
           </Button>
@@ -505,7 +508,10 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     return (
       <div className="min-h-screen bg-background">
         <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-neutral-800">Assessment Complete</h1>
+          <div className="flex items-center space-x-4">
+            <BackButton to="/" />
+            <h1 className="text-xl font-semibold text-neutral-800">Assessment Complete</h1>
+          </div>
           <Button variant="destructive" onClick={handleLogout}>
             Logout
           </Button>
@@ -544,6 +550,7 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
         <div className="flex items-center gap-4">
+          <BackButton to="/" />
           <h1 className="text-xl font-semibold text-neutral-800">Computer Science Assessment</h1>
           <Button 
             variant="outline" 

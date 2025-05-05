@@ -5,6 +5,7 @@ import QuestionManagement from "@/components/QuestionManagement";
 import StudentManagement from "@/components/StudentManagement";
 import ResultsManagement from "@/components/ResultsManagement";
 import { Button } from "@/components/ui/button";
+import BackButton from "@/components/BackButton";
 
 type TabType = "questions" | "students" | "results";
 
@@ -28,7 +29,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     <div className="min-h-screen bg-background">
       {/* Admin Header */}
       <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl font-semibold text-neutral-800">Admin Dashboard</h1>
+        <div className="flex items-center space-x-4">
+          <BackButton to="/" />
+          <h1 className="text-xl font-semibold text-neutral-800">Admin Dashboard</h1>
+        </div>
         <Button variant="destructive" onClick={handleLogout}>
           Logout
         </Button>
