@@ -65,7 +65,18 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         body: JSON.stringify({
           timeRemaining: seconds
         })
-      }).catch(error => {
+      })
+      .then(response => {
+        // If we get a 403 Not authorized error, the ID might be wrong - we need to refresh
+        if (response.status === 403) {
+          console.warn("Assessment ID might be incorrect, consider refreshing");
+          
+          // We don't want to interrupt the user constantly, so just log a warning for now
+          // If they try to submit an answer, they'll get the refresh button
+        }
+        return response;
+      })
+      .catch(error => {
         console.error("Failed to persist timer:", error);
       });
     }
@@ -171,8 +182,23 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to submit answer: ${errorText}`);
+        // Parse the error response
+        let errorMessage: string;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Unknown error occurred';
+        } catch (e) {
+          // If we can't parse the JSON, just use the response text
+          errorMessage = await response.text();
+        }
+        
+        // Check if this is an authorization error and handle it gracefully
+        if (response.status === 403 && errorMessage.includes('Not authorized')) {
+          // Refetch the assessment to get the current user's own assessment ID
+          throw new Error('Authorization error. Please refresh the page to continue with your assessment.');
+        } else {
+          throw new Error(`Failed to submit answer: ${errorMessage}`);
+        }
       }
       
       return response.json();
@@ -194,11 +220,32 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       }
     },
     onError: (error) => {
-      toast({
-        title: "Failed to submit answer",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
+      // If error suggests refreshing, offer a button to do so
+      if (error instanceof Error && error.message.includes('refresh the page')) {
+        toast({
+          title: "Assessment needs refresh",
+          description: (
+            <div className="flex flex-col gap-2">
+              <span>{error.message}</span>
+              <Button 
+                variant="outline" 
+                onClick={() => refetchAssessment()}
+                className="mt-2"
+              >
+                Refresh Assessment
+              </Button>
+            </div>
+          ),
+          variant: "destructive",
+          duration: 10000, // Extra time to read and click
+        });
+      } else {
+        toast({
+          title: "Failed to submit answer",
+          description: error instanceof Error ? error.message : "Please try again",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -330,14 +377,23 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Failed to update timer before logout:', errorText);
+          // Just log the error but don't block logout
+          // If it's a 403, it might be because we're trying to update someone else's assessment
+          try {
+            const errorData = await response.json();
+            console.error('Failed to update timer before logout:', errorData);
+            // If we can't save the timer, it's not critical - the user is logging out anyway
+          } catch (e) {
+            const errorText = await response.text();
+            console.error('Failed to update timer before logout:', errorText);
+          }
         }
       } catch (error) {
         console.error('Error saving timer before logout:', error);
       }
     }
     
+    // Proceed with logout regardless of timer update success
     await onLogout();
   };
 
