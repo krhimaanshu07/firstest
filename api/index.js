@@ -1,10 +1,8 @@
-// Main API entrypoint for Vercel
-const { createServer } = require('http');
-const { parse } = require('url');
-const next = require('next');
+// Main API entrypoint for Vercel serverless function
+const serverHandler = require('./server');
 
-// This will be the serverless function for Vercel
+// This is the serverless function entry point for Vercel
 module.exports = async (req, res) => {
-  // Forward to our server.js function
-  require('./server')(req, res);
+  // Forward to our server.js handler
+  return serverHandler(req, res);
 };
