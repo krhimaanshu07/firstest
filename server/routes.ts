@@ -116,11 +116,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/questions/:id", requireAuth, async (req, res) => {
     try {
-      const questionId = parseInt(req.params.id);
-      if (isNaN(questionId)) {
-        return res.status(400).json({ message: "Invalid question ID" });
-      }
-
+      const questionId = req.params.id;
+      // MongoDB can handle string IDs directly
       const question = await storage.getQuestion(questionId);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
@@ -134,11 +131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/questions/:id", requireAdmin, async (req, res) => {
     try {
-      const questionId = parseInt(req.params.id);
-      if (isNaN(questionId)) {
-        return res.status(400).json({ message: "Invalid question ID" });
-      }
-
+      const questionId = req.params.id;
+      
       const questionData = insertQuestionSchema.partial().parse(req.body);
       const updatedQuestion = await storage.updateQuestion(questionId, questionData);
       
@@ -157,11 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/questions/:id", requireAdmin, async (req, res) => {
     try {
-      const questionId = parseInt(req.params.id);
-      if (isNaN(questionId)) {
-        return res.status(400).json({ message: "Invalid question ID" });
-      }
-
+      const questionId = req.params.id;
+      
       const success = await storage.deleteQuestion(questionId);
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
