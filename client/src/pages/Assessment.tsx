@@ -472,7 +472,22 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl font-semibold text-neutral-800">Computer Science Assessment</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-semibold text-neutral-800">Computer Science Assessment</h1>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const confirmed = window.confirm("This will refresh your assessment. Any unsaved progress may be lost. Continue?");
+              if (confirmed) {
+                refetchAssessment();
+              }
+            }}
+            className="text-xs"
+          >
+            Refresh Assessment
+          </Button>
+        </div>
         <div className="flex items-center">
           <div className="mr-6 bg-yellow-100 text-yellow-800 py-1 px-3 rounded-md flex items-center">
             <Clock className="h-5 w-5 mr-1" />
