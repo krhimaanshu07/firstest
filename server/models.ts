@@ -23,7 +23,7 @@ export interface IQuestion extends Document {
 
 // Assessment interface
 export interface IAssessment extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId | string;
   startTime: Date;
   endTime?: Date;
   timeRemaining?: number;
@@ -33,8 +33,8 @@ export interface IAssessment extends Document {
 
 // Answer interface
 export interface IAnswer extends Document {
-  assessmentId: mongoose.Types.ObjectId;
-  questionId: mongoose.Types.ObjectId;
+  assessmentId: mongoose.Types.ObjectId | string;
+  questionId: mongoose.Types.ObjectId | string;
   answer: string;
   isCorrect: boolean;
 }
