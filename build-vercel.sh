@@ -1,19 +1,49 @@
 #!/bin/bash
 set -e
 
-# Build the frontend
-npm run build
+# Make script executable
+chmod +x build-vercel.sh
 
-# Copy necessary server files for API functions to work
-mkdir -p dist/server
-cp -r server/*.ts server/*.js dist/server/
+# Build the frontend with Vite
+echo "Building frontend with Vite..."
+npx vite build
 
-# Compile TypeScript server files
-npx tsc -p tsconfig.json --outDir dist/server
+# Create server directory for compiled files
+mkdir -p dist/server dist/shared
 
-# Create a simple index.html for the root path
-if [ ! -f dist/index.html ]; then
-  echo '<html><head><meta http-equiv="refresh" content="0; url=/"></head></html>' > dist/index.html
-fi
+# Copy necessary JS server files (if any)
+cp -r server/*.js dist/server/ 2>/dev/null || :
+
+# Compile TypeScript server files with separate server config
+echo "Compiling TypeScript server files..."
+npx tsc --project tsconfig.server.json
+
+# Copy shared schema files for direct imports
+echo "Copying shared schema files..."
+cp -r shared/*.ts shared/*.js dist/shared/ 2>/dev/null || :
+
+# Process shared schema files to work in CommonJS environment
+for file in dist/shared/*.ts; do
+  if [ -f "$file" ]; then
+    # Convert imports to require
+    sed -i 's/import \(.*\) from "\(.*\)";/const \1 = require("\2");/g' "$file"
+    
+    # Add module.exports at the end of file if it doesn't exist
+    grep -q "module.exports" "$file" || echo "module.exports = { $(grep -o "export [a-zA-Z]* [a-zA-Z]*" "$file" | sed 's/export //g' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g') };" >> "$file"
+    
+    # Rename .ts to .js
+    mv "$file" "${file%.ts}.js"
+  fi
+done
+
+# Create simple index.js to help with requiring shared modules
+echo "// Shared module exports for CommonJS environment" > dist/shared/index.js
+echo "module.exports = {" >> dist/shared/index.js
+echo "  schema: require('./schema')" >> dist/shared/index.js
+echo "};" >> dist/shared/index.js
+
+# Make a note for debugging
+echo "Build directory structure:"
+find dist -type f | sort
 
 echo "Build completed successfully!"

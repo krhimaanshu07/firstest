@@ -1,4 +1,9 @@
-// Vercel Serverless Function Entry Point
+// Catch-all API handler for Vercel Serverless Functions
+// This will handle all API routes like /api/auth/login, /api/questions, etc.
+
+// Initialize path resolver for @shared/* imports
+require('./resolver');
+
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -10,6 +15,11 @@ require('dotenv').config();
 // Server instance (will be cached between invocations)
 let app = null;
 let isSetup = false;
+
+// Utility function to resolve shared module paths
+function resolveSharedImport(modulePath) {
+  return path.join(process.cwd(), 'dist/server', modulePath.replace('@shared/', '../shared/'));
+}
 
 // Create and configure the Express application
 async function setupApp() {
@@ -63,28 +73,47 @@ async function setupApp() {
       }
     }));
     
-    // Import models and setup auth
-    require('../dist/server/models');
-    const auth = require('../dist/server/auth');
-    auth.setupAuth(app);
+    // Import models
+    try {
+      require('../dist/server/models');
+    } catch (err) {
+      console.error('Error loading models:', err);
+    }
+    
+    // Setup authentication
+    try {
+      const auth = require('../dist/server/auth');
+      auth.setupAuth(app);
+    } catch (err) {
+      console.error('Error setting up auth:', err);
+      // Add a fallback auth route for testing
+      app.get('/api/auth/status', (req, res) => {
+        res.json({ authenticated: req.isAuthenticated ? req.isAuthenticated() : false });
+      });
+    }
     
     // Basic test route
     app.get('/api/status', (req, res) => {
       res.json({
         status: 'ok',
         mongoConnection: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString()
       });
     });
     
-    // Setup API routes
-    const routes = require('../dist/server/routes');
-    await routes.registerRoutes(app);
+    // Setup all API routes
+    try {
+      const routes = require('../dist/server/routes');
+      await routes.registerRoutes(app);
+    } catch (err) {
+      console.error('Error registering routes:', err);
+    }
     
     // Error handling middleware
     app.use((err, req, res, next) => {
       console.error('API Error:', err);
-      res.status(500).json({ error: 'Internal Server Error' });
+      res.status(500).json({ error: 'Internal Server Error', message: err.message });
     });
     
     isSetup = true;
