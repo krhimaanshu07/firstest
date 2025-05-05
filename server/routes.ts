@@ -440,6 +440,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get a single assessment
+  app.get("/api/assessments/:id", requireAuth, async (req, res) => {
+    try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const assessmentId = parseInt(req.params.id);
+      if (isNaN(assessmentId)) {
+        return res.status(400).json({ message: "Invalid assessment ID" });
+      }
+
+      const assessment = await storage.getAssessment(assessmentId);
+      if (!assessment) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+
+      // Only allow access to the student's own assessment or admin
+      if (assessment.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Not authorized to view this assessment" });
+      }
+
+      const answers = await storage.getAnswersByAssessment(assessmentId);
+      
+      return res.status(200).json({
+        ...assessment,
+        answeredQuestions: answers.length,
+        correctAnswers: answers.filter(a => a.isCorrect).length
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get all assessments (admin only)
   app.get("/api/assessments", requireAdmin, async (req, res) => {
     try {
       const assessments = await storage.getAllAssessments();
