@@ -120,14 +120,18 @@ export class MemStorage implements IStorage {
   }
   
   // Question operations
-  async getQuestion(id: number): Promise<Question | undefined> {
+  async getQuestion(id: string | number): Promise<Question | undefined> {
+    if (typeof id === 'string') {
+      id = parseInt(id);
+    }
     return this.questions.get(id);
   }
   
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const id = this.questionId++.toString(); // Convert to string for MongoDB compatibility
+    const idNum = this.questionId++;
+    const id = idNum.toString(); // Convert to string for MongoDB compatibility
     const newQuestion: Question = { ...question, id };
-    this.questions.set(parseInt(id), newQuestion);
+    this.questions.set(idNum, newQuestion);
     return newQuestion;
   }
   
@@ -193,16 +197,23 @@ export class MemStorage implements IStorage {
   }
   
   // Assessment operations
-  async getAssessment(id: number): Promise<Assessment | undefined> {
+  async getAssessment(id: string | number): Promise<Assessment | undefined> {
+    if (typeof id === 'string') {
+      id = parseInt(id);
+    }
     return this.assessments.get(id);
   }
   
-  async getAssessmentsByUser(userId: number): Promise<Assessment[]> {
-    return Array.from(this.assessments.values()).filter(assessment => assessment.userId === userId);
+  async getAssessmentsByUser(userId: string | number): Promise<Assessment[]> {
+    const userIdStr = typeof userId === 'number' ? userId.toString() : userId;
+    return Array.from(this.assessments.values()).filter(assessment => 
+      assessment.userId.toString() === userIdStr
+    );
   }
   
   async createAssessment(assessment: InsertAssessment): Promise<Assessment> {
-    const id = this.assessmentId++;
+    const idNum = this.assessmentId++;
+    const id = idNum.toString(); // Convert to string for MongoDB compatibility
     const newAssessment: Assessment = { 
       ...assessment, 
       id, 
@@ -210,16 +221,17 @@ export class MemStorage implements IStorage {
       endTime: undefined,
       score: undefined
     };
-    this.assessments.set(id, newAssessment);
+    this.assessments.set(idNum, newAssessment);
     return newAssessment;
   }
   
-  async updateAssessment(id: number, data: Partial<Assessment>): Promise<Assessment | undefined> {
-    const existingAssessment = this.assessments.get(id);
+  async updateAssessment(id: string | number, data: Partial<Assessment>): Promise<Assessment | undefined> {
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    const existingAssessment = this.assessments.get(idNum);
     if (!existingAssessment) return undefined;
     
     const updatedAssessment = { ...existingAssessment, ...data };
-    this.assessments.set(id, updatedAssessment);
+    this.assessments.set(idNum, updatedAssessment);
     return updatedAssessment;
   }
   
@@ -228,27 +240,35 @@ export class MemStorage implements IStorage {
   }
   
   // Answer operations
-  async getAnswer(id: number): Promise<Answer | undefined> {
+  async getAnswer(id: string | number): Promise<Answer | undefined> {
+    if (typeof id === 'string') {
+      id = parseInt(id);
+    }
     return this.answers.get(id);
   }
   
-  async getAnswersByAssessment(assessmentId: number): Promise<Answer[]> {
-    return Array.from(this.answers.values()).filter(answer => answer.assessmentId === assessmentId);
+  async getAnswersByAssessment(assessmentId: string | number): Promise<Answer[]> {
+    const assessmentIdStr = typeof assessmentId === 'number' ? assessmentId.toString() : assessmentId;
+    return Array.from(this.answers.values()).filter(answer => 
+      answer.assessmentId.toString() === assessmentIdStr
+    );
   }
   
   async createAnswer(answer: InsertAnswer): Promise<Answer> {
-    const id = this.answerId++;
+    const idNum = this.answerId++;
+    const id = idNum.toString(); // Convert to string for MongoDB compatibility
     const newAnswer: Answer = { ...answer, id };
-    this.answers.set(id, newAnswer);
+    this.answers.set(idNum, newAnswer);
     return newAnswer;
   }
   
-  async updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
-    const existingAnswer = this.answers.get(id);
+  async updateAnswer(id: string | number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    const existingAnswer = this.answers.get(idNum);
     if (!existingAnswer) return undefined;
     
     const updatedAnswer = { ...existingAnswer, ...data };
-    this.answers.set(id, updatedAnswer);
+    this.answers.set(idNum, updatedAnswer);
     return updatedAnswer;
   }
 
