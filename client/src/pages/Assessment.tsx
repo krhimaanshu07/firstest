@@ -33,7 +33,8 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     data: assessmentData,
     isLoading: isStartingAssessment,
     isError: startError,
-    error: startErrorDetails
+    error: startErrorDetails,
+    refetch: refetchAssessment
   } = useQuery<AssessmentResponse>({
     queryKey: ['/api/assessments/start'],
     queryFn: async (): Promise<AssessmentResponse> => {
@@ -42,7 +43,7 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         credentials: 'include'
       });
       if (!response.ok) {
-        throw new Error('Failed to start assessment');
+        throw new Error('Failed to start assessment: ' + await response.text());
       }
       return response.json();
     },
@@ -101,7 +102,13 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to update timer');
+          const errorText = await response.text();
+          console.error(`Failed to update timer: ${errorText}`);
+          
+          // If the assessment is marked as completed on the server, update local state
+          if (errorText.includes("already completed")) {
+            setIsCompleted(true);
+          }
         }
       } catch (error) {
         console.error("Failed to update timer:", error);
@@ -114,6 +121,10 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer }: { questionId: number, answer: string }) => {
+      if (!assessmentId) {
+        throw new Error('No active assessment');
+      }
+      
       const response = await fetch(`/api/assessments/${assessmentId}/submit-answer`, {
         method: 'POST',
         headers: {
@@ -128,7 +139,8 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to submit answer');
+        const errorText = await response.text();
+        throw new Error(`Failed to submit answer: ${errorText}`);
       }
       
       return response.json();
@@ -161,6 +173,10 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
   // Complete assessment (when time runs out or manually submitted)
   const completeAssessmentMutation = useMutation<any, Error, boolean>({
     mutationFn: async (isManual) => {
+      if (!assessmentId) {
+        throw new Error('No active assessment');
+      }
+      
       const response = await fetch(`/api/assessments/${assessmentId}/complete`, {
         method: 'POST',
         headers: {
@@ -173,7 +189,8 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to complete assessment');
+        const errorText = await response.text();
+        throw new Error(`Failed to complete assessment: ${errorText}`);
       }
       
       return response.json();
@@ -258,7 +275,8 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         });
         
         if (!response.ok) {
-          console.error('Failed to update timer before logout');
+          const errorText = await response.text();
+          console.error('Failed to update timer before logout:', errorText);
         }
       } catch (error) {
         console.error('Error saving timer before logout:', error);
