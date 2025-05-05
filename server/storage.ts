@@ -2,8 +2,14 @@ import {
   User, InsertUser, 
   Question, InsertQuestion,
   Assessment, InsertAssessment,
-  Answer, InsertAnswer
+  Answer, InsertAnswer,
+  users, questions, assessments, answers
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, sql } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
+import session from "express-session";
+import { pool } from "./db";
 
 export interface IStorage {
   // User operations
@@ -33,6 +39,9 @@ export interface IStorage {
   getAnswersByAssessment(assessmentId: number): Promise<Answer[]>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
   updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined>;
+  
+  // Session store for authentication
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -46,6 +55,9 @@ export class MemStorage implements IStorage {
   private assessmentId: number;
   private answerId: number;
   
+  // Add session store
+  public sessionStore: session.Store;
+  
   constructor() {
     this.users = new Map();
     this.questions = new Map();
@@ -56,6 +68,12 @@ export class MemStorage implements IStorage {
     this.questionId = 1;
     this.assessmentId = 1;
     this.answerId = 1;
+    
+    // Initialize memory store for sessions
+    const MemoryStore = require('memorystore')(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
     
     // Initialize with admin user
     this.createUser({
@@ -282,4 +300,180 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database implementation of IStorage
+export class DatabaseStorage implements IStorage {
+  public sessionStore: session.Store;
+  
+  constructor() {
+    // Set up PostgreSQL session store
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+  }
+  
+  // Utility to help with correct types in PostgreSQL operations
+  private mapToNullable<T>(value: T | undefined): T | null {
+    return value === undefined ? null : value;
+  }
+  
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async getUserByStudentId(studentId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.studentId, studentId));
+    return user;
+  }
+  
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+  
+  async getAllStudents(): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, "student"));
+  }
+  
+  // Question operations
+  async getQuestion(id: number): Promise<Question | undefined> {
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    return question;
+  }
+  
+  async createQuestion(question: InsertQuestion): Promise<Question> {
+    const [newQuestion] = await db.insert(questions).values(question).returning();
+    return newQuestion;
+  }
+  
+  async updateQuestion(id: number, questionData: Partial<InsertQuestion>): Promise<Question | undefined> {
+    const [updatedQuestion] = await db
+      .update(questions)
+      .set(questionData)
+      .where(eq(questions.id, id))
+      .returning();
+    return updatedQuestion;
+  }
+  
+  async deleteQuestion(id: number): Promise<boolean> {
+    const result = await db.delete(questions).where(eq(questions.id, id));
+    return result.rowCount > 0;
+  }
+  
+  async getAllQuestions(): Promise<Question[]> {
+    return db.select().from(questions);
+  }
+  
+  // Fisher-Yates algorithm for better randomization
+  private shuffleArray<T>(array: T[]): T[] {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+  
+  // Randomize answer options while preserving correct answer
+  private randomizeOptions(question: Question): Question {
+    // For multiple-choice questions, randomize the options
+    if (question.type === 'multiple-choice' && question.options) {
+      // Keep track of the correct answer
+      const correctAnswer = question.correctAnswer;
+      
+      // Shuffle the options
+      const shuffledOptions = this.shuffleArray(question.options);
+      
+      // Return a new question with shuffled options
+      return {
+        ...question,
+        options: shuffledOptions,
+        correctAnswer
+      };
+    }
+    
+    // For other question types or if no options, return as is
+    return question;
+  }
+  
+  async getRandomQuestions(count: number): Promise<Question[]> {
+    // For PostgreSQL we can use random() to get random questions
+    const allQuestions = await db
+      .select()
+      .from(questions)
+      .orderBy(sql`RANDOM()`)
+      .limit(count);
+    
+    // Then randomize options for each question
+    return allQuestions.map(q => this.randomizeOptions(q));
+  }
+  
+  // Assessment operations
+  async getAssessment(id: number): Promise<Assessment | undefined> {
+    const [assessment] = await db.select().from(assessments).where(eq(assessments.id, id));
+    return assessment;
+  }
+  
+  async getAssessmentsByUser(userId: number): Promise<Assessment[]> {
+    return db.select().from(assessments).where(eq(assessments.userId, userId));
+  }
+  
+  async createAssessment(assessment: InsertAssessment): Promise<Assessment> {
+    const [newAssessment] = await db
+      .insert(assessments)
+      .values({
+        ...assessment,
+        isComplete: false
+      })
+      .returning();
+    return newAssessment;
+  }
+  
+  async updateAssessment(id: number, data: Partial<Assessment>): Promise<Assessment | undefined> {
+    const [updatedAssessment] = await db
+      .update(assessments)
+      .set(data)
+      .where(eq(assessments.id, id))
+      .returning();
+    return updatedAssessment;
+  }
+  
+  async getAllAssessments(): Promise<Assessment[]> {
+    return db.select().from(assessments);
+  }
+  
+  // Answer operations
+  async getAnswer(id: number): Promise<Answer | undefined> {
+    const [answer] = await db.select().from(answers).where(eq(answers.id, id));
+    return answer;
+  }
+  
+  async getAnswersByAssessment(assessmentId: number): Promise<Answer[]> {
+    return db.select().from(answers).where(eq(answers.assessmentId, assessmentId));
+  }
+  
+  async createAnswer(answer: InsertAnswer): Promise<Answer> {
+    const [newAnswer] = await db.insert(answers).values(answer).returning();
+    return newAnswer;
+  }
+  
+  async updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
+    const [updatedAnswer] = await db
+      .update(answers)
+      .set(data)
+      .where(eq(answers.id, id))
+      .returning();
+    return updatedAnswer;
+  }
+}
+
+// Switch to database storage for persistence
+export const storage = new DatabaseStorage();
