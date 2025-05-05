@@ -111,14 +111,6 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     return () => clearInterval(intervalId);
   }, [assessmentId, timeRemaining, isRunning, isCompleted]);
 
-  // Handle time up
-  useEffect(() => {
-    if (timeRemaining <= 0 && !isCompleted) {
-      pauseTimer();
-      completeAssessmentMutation.mutate();
-    }
-  }, [timeRemaining, isCompleted]);
-
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer }: { questionId: number, answer: string }) => {
@@ -166,17 +158,17 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
     }
   });
 
-  // Complete assessment (when time runs out)
-  const completeAssessmentMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/assessments/${assessmentId}/update-timer`, {
-        method: 'PUT',
+  // Complete assessment (when time runs out or manually submitted)
+  const completeAssessmentMutation = useMutation<any, Error, boolean>({
+    mutationFn: async (isManual) => {
+      const response = await fetch(`/api/assessments/${assessmentId}/complete`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
-          timeRemaining: 0
+          timeRemaining: isManual ? timeRemaining : 0
         })
       });
       
@@ -186,15 +178,43 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      const isManual = variables; // The variable we passed in
       setIsCompleted(true);
+      setScore(data.score);
+      
       toast({
-        title: "Time's up!",
-        description: "Your assessment has been submitted",
-        variant: "destructive",
+        title: isManual ? "Assessment Completed!" : "Time's up!",
+        description: isManual 
+          ? `Your score: ${data.score}%. Results have been recorded.` 
+          : "Your assessment has been submitted",
+        variant: isManual ? "default" : "destructive",
       });
     }
   });
+
+  // Handle time up
+  useEffect(() => {
+    if (timeRemaining <= 0 && !isCompleted) {
+      pauseTimer();
+      completeAssessmentMutation.mutate(false);
+    }
+  }, [timeRemaining, isCompleted, pauseTimer, completeAssessmentMutation]);
+  
+  // Handle manual assessment submission
+  const handleSubmitAssessment = async () => {
+    if (assessmentId && !isCompleted) {
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        `Are you sure you want to submit your assessment? You have answered ${userAnswers.size} out of ${questions.length} questions.`
+      );
+      
+      if (confirmed) {
+        pauseTimer();
+        completeAssessmentMutation.mutate(true);
+      }
+    }
+  };
 
   // Handle answer selection
   const handleAnswerSelect = (questionId: number, answer: string) => {
@@ -362,24 +382,39 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
               />
             </div>
 
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={handlePrevQuestion}
-                disabled={currentQuestionIndex === 0}
-                className="flex items-center"
-              >
-                <ArrowLeft className="h-5 w-5 mr-1" />
-                Previous
-              </Button>
-              <Button
-                onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === questions.length - 1}
-                className="flex items-center"
-              >
-                Next
-                <ArrowRight className="h-5 w-5 ml-1" />
-              </Button>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className="flex items-center"
+                >
+                  <ArrowLeft className="h-5 w-5 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  onClick={handleNextQuestion}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className="flex items-center"
+                >
+                  Next
+                  <ArrowRight className="h-5 w-5 ml-1" />
+                </Button>
+              </div>
+              
+              {userAnswers.size >= 3 && (
+                <div className="flex justify-center mt-4">
+                  <Button 
+                    variant="default" 
+                    size="lg"
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-2"
+                    onClick={handleSubmitAssessment}
+                  >
+                    Submit Assessment
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         ) : (

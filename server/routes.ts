@@ -459,7 +459,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all assessments (admin only)
+  // Complete an assessment manually
+  app.post("/api/assessments/:id/complete", requireAuth, async (req, res) => {
+    try {
+      const assessmentId = parseInt(req.params.id);
+      if (isNaN(assessmentId)) {
+        return res.status(400).json({ message: "Invalid assessment ID" });
+      }
+
+      // Verify it's the student's own assessment
+      const assessment = await storage.getAssessment(assessmentId);
+      if (!assessment) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+
+      if (assessment.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized to complete this assessment" });
+      }
+
+      if (assessment.isComplete) {
+        return res.status(400).json({ message: "Assessment is already complete" });
+      }
+
+      // Get remaining time (if provided)
+      const { timeRemaining } = req.body;
+
+      // Calculate score
+      const answers = await storage.getAnswersByAssessment(assessmentId);
+      const correctAnswers = answers.filter(a => a.isCorrect).length;
+      const totalQuestions = 40; // Assuming 40 questions per assessment
+      const score = answers.length > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      
+      // Complete the assessment
+      await storage.updateAssessment(assessmentId, {
+        isComplete: true,
+        endTime: new Date(),
+        score,
+        timeRemaining: typeof timeRemaining === 'number' ? Math.max(0, timeRemaining) : 0
+      });
+
+      return res.status(200).json({
+        message: "Assessment completed successfully",
+        score,
+        totalQuestions,
+        answeredQuestions: answers.length,
+        correctAnswers
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
   app.get("/api/assessments", requireAdmin, async (req, res) => {
     try {
       const assessments = await storage.getAllAssessments();
