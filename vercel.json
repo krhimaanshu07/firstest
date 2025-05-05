@@ -1,7 +1,19 @@
 {
   "version": 2,
-  "buildCommand": "./build-script.sh",
-  "outputDirectory": "dist/client",
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "buildCommand": "npm run build && mkdir -p dist/client && mv dist/assets dist/client/ && mv dist/index.html dist/client/ && npx esbuild server/**/*.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist/server",
+        "outputDirectory": "dist/client"
+      }
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(assets/.+)", "destination": "/$1" },
