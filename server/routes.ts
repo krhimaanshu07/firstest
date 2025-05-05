@@ -54,9 +54,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { confirmPassword, ...userData } = studentData;
       
       // Create the student user
+      // Handle null values for MongoDB compatibility
       const newUser = await storage.createUser({
         ...userData,
-        role: "student"
+        role: "student",
+        email: userData.email || undefined,
+        studentId: userData.studentId || undefined
       });
 
       return res.status(201).json({
@@ -500,6 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(enhancedAssessments);
     } catch (error) {
+      console.error("Error getting all assessments:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });

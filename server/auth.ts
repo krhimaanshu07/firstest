@@ -72,7 +72,8 @@ export function setupAuth(app: Express) {
   
   passport.deserializeUser(async (id: string, done) => {
     try {
-      const user = await storage.getUser(parseInt(id, 10) || id);
+      // With MongoDB, we use string IDs directly - no need to try to parse as integer
+      const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
       done(error);
@@ -107,8 +108,8 @@ export function setupAuth(app: Express) {
         username,
         password: await hashPassword(password),
         role: role || "student",
-        email: email || null,
-        studentId: studentId || null
+        email: email || undefined,
+        studentId: studentId || undefined
       });
 
       // Login the user after registration (for students)
