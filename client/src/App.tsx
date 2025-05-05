@@ -14,7 +14,7 @@ import Assessment from "@/pages/Assessment";
 
 // Define the User type
 interface User {
-  id: number;
+  id: string; // Updated to string for MongoDB compatibility
   username: string;
   role: string;
   studentId?: string;
