@@ -73,11 +73,17 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  
+  // Fix for macOS: Use TCP options and explicitly handle errors
+  try {
+    server.listen(port, () => {
+      log(`serving on port ${port}`);
+    });
+  } catch (err) {
+    console.error('Server startup error:', err);
+    // Try alternative binding if first attempt fails
+    server.listen(port, '127.0.0.1', () => {
+      log(`serving on localhost:${port}`);
+    });
+  }
 })();
