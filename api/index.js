@@ -1,8 +1,9 @@
 // Vercel Serverless Function
 const express = require('express');
 const { createServer } = require('http');
-const { connectToMongoDB } = require('../dist/server/mongodb-vercel');
-const { setupServer } = require('../dist/server/vercel-setup');
+// Import MongoDB connection and server setup directly
+const { connectToMongoDB } = require('../server/mongodb-vercel');
+const { setupServer } = require('../server/vercel-setup');
 require('dotenv').config();
 
 // Initialize Express instance (will be cached between invocations)
