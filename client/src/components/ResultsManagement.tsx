@@ -1,7 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Assessment } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileDown, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 
 interface EnhancedAssessment extends Assessment {
@@ -16,13 +29,30 @@ interface EnhancedAssessment extends Assessment {
 
 export default function ResultsManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Fetch assessment results
   const { data: assessments = [], isLoading } = useQuery({
-    queryKey: ['/api/assessments'],
+    queryKey: ['/api/assessments']
+  });
+  
+  // Clear all results mutation
+  const clearResultsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", "/api/assessments").then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assessments'] });
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Results cleared",
+        description: "All assessment results have been cleared successfully",
+      });
+    },
     onError: (error) => {
       toast({
-        title: "Failed to load results",
+        title: "Failed to clear results",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
@@ -47,16 +77,60 @@ export default function ResultsManagement() {
   
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-neutral-800">Assessment Results</h2>
-        <p className="text-neutral-600 mt-1">View student performance and assessment results</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-neutral-800">Assessment Results</h2>
+          <p className="text-neutral-600 mt-1">View student performance and assessment results</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Export to CSV
+              const csv = [
+                // Headers
+                ['Student', 'Score', 'Questions', 'Time Spent', 'Completion Date'].join(','),
+                // Data
+                ...completedAssessments.map((assessment: EnhancedAssessment) => [
+                  `"${assessment.student?.username || 'Unknown'}${assessment.student?.studentId ? ` (${assessment.student.studentId})` : ''}"`,
+                  `${assessment.score || 0}%`,
+                  `${assessment.correctAnswers || 0}/${assessment.answeredQuestions || 0}`,
+                  `${assessment.startTime && assessment.endTime ? formatTimeSpent(assessment.startTime, assessment.endTime) : 'N/A'}`,
+                  `${assessment.endTime ? format(new Date(assessment.endTime), 'MMM d, yyyy HH:mm') : 'N/A'}`
+                ].join(','))
+              ].join('\n');
+              
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.setAttribute('href', url);
+              link.setAttribute('download', `assessment-results-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+          >
+            <FileDown className="h-5 w-5 mr-1" />
+            Export to CSV
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={completedAssessments.length === 0}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+          >
+            <Trash2 className="h-5 w-5 mr-1" />
+            Clear Results
+          </Button>
+        </div>
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-neutral-200">
           <thead className="bg-neutral-100">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Assessment ID</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Student</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Score</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Questions</th>
@@ -74,9 +148,6 @@ export default function ResultsManagement() {
             ) : completedAssessments.length > 0 ? (
               completedAssessments.map((assessment: EnhancedAssessment, index: number) => (
                 <tr key={assessment.id} className={index % 2 === 1 ? "bg-neutral-50" : ""}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700">
-                    {assessment.id}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700">
                     {assessment.student?.username || "Unknown"} 
                     {assessment.student?.studentId ? ` (${assessment.student.studentId})` : ''}
