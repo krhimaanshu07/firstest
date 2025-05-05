@@ -1,60 +1,44 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
-# Make script executable
-chmod +x build-vercel.sh
+# 1. Build the frontend
+echo "▶ Building frontend…"
+npm run build
 
-# Build the frontend with Vite
-echo "Building frontend with Vite..."
-npx vite build
+# 2. Clean and recreate dist folders
+echo "▶ Preparing dist directories…"
+rm -rf dist
+mkdir -p dist/public
+mkdir -p dist/server
+mkdir -p dist/shared
 
-# Create server directory for compiled files
-mkdir -p dist/server dist/shared
+# 3. Copy frontend output into dist/public
+echo "▶ Copying frontend assets…"
+cp -R build/* dist/public/
 
-# Copy necessary JS server files (if any)
-cp -r server/*.js dist/server/ 2>/dev/null || :
+# 4. Compile server and shared TypeScript to dist
+echo "▶ Compiling server and shared TS…"
+tsc --project tsconfig.json --outDir dist/server --rootDir server
+tsc --project tsconfig.json --outDir dist/shared --rootDir shared
 
-# Compile TypeScript server files with separate server config
-echo "Compiling TypeScript server files..."
-npx tsc --project tsconfig.server.json
+# 5. Copy any raw JS server files you might have
+echo "▶ Copying extra JS server files…"
+cp -r server/*.js dist/server/ 2>/dev/null || true
 
-# Copy shared schema files for direct imports
-echo "Copying shared schema files..."
-cp -r shared/*.ts shared/*.js dist/shared/ 2>/dev/null || :
-
-# Process shared schema files to work in CommonJS environment
-for file in dist/shared/*.ts; do
-  if [ -f "$file" ]; then
-    # Convert imports to require
-    sed -i 's/import \(.*\) from "\(.*\)";/const \1 = require("\2");/g' "$file"
-    
-    # Add module.exports at the end of file if it doesn't exist
-    if ! grep -q "module.exports" "$file"; then
-      # Extract all TS exports into a comma-separated list
-      exports=$(
-        grep -o 'export [A-Za-z]* [A-Za-z]*' "$file" \
+# 6. Ensure shared modules export correctly for Node
+echo "▶ Adding module.exports to shared .js files if missing…"
+for file in dist/shared/*.js; do
+  if [ -f "$file" ] && ! grep -q "module.exports" "$file"; then
+    exports=$(
+      grep -o 'export [A-Za-z]* [A-Za-z]*' "$file" \
         | sed 's/export //g' \
         | tr '\n' ',' \
         | sed 's/,$//' \
         | sed 's/,/, /g'
-      )
-      # Safely echo with single quotes around the message
-      echo 'module.exports = { '"$exports"' };' >> "$file"
-    fi
-    
-    # Rename .ts to .js
-    mv "$file" "${file%.ts}.js"
+    )
+    echo "module.exports = { $exports };" >> "$file"
+    echo "  ↳ Added exports: $exports"
   fi
 done
 
-# Create simple index.js to help with requiring shared modules
-echo "// Shared module exports for CommonJS environment" > dist/shared/index.js
-echo "module.exports = {" >> dist/shared/index.js
-echo "  schema: require('./schema')" >> dist/shared/index.js
-echo "};" >> dist/shared/index.js
-
-# Make a note for debugging
-echo "Build directory structure:"
-find dist -type f | sort
-
-echo "Build completed successfully!"
+echo "✅ build-vercel.sh completed successfully."
