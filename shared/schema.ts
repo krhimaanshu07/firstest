@@ -91,7 +91,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Question = typeof questions.$inferSelect & { 
-  studentAnswer?: string;  // Only used on the client, not stored in DB 
+  studentAnswer?: string;  // Only used on the client, not stored in DB
+  id: string;  // Explicitly define id as string for MongoDB compatibility
 };
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 

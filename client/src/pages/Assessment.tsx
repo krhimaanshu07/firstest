@@ -9,7 +9,7 @@ import { Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { Question, Answer } from "@shared/schema";
 
 interface AssessmentResponse {
-  assessmentId: number;
+  assessmentId: string; // Updated to string for MongoDB compatibility
   questions?: Question[];
   isComplete?: boolean;
   timeRemaining?: number;
@@ -99,10 +99,11 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
       }
       
       // Initialize user answers from existing studentAnswers in the questions
-      const initialAnswers = new Map<number, string>();
+      const initialAnswers = new Map<string, string>();
       if (assessmentData.questions) {
         assessmentData.questions.forEach(question => {
           if (question.studentAnswer) {
+            // In MongoDB, question.id is always a string
             initialAnswers.set(question.id, question.studentAnswer);
           }
         });
@@ -148,10 +149,13 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
 
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
-    mutationFn: async ({ questionId, answer }: { questionId: number, answer: string }) => {
+    mutationFn: async ({ questionId, answer }: { questionId: string | number, answer: string }) => {
       if (!assessmentId) {
         throw new Error('No active assessment');
       }
+      
+      // Convert questionId to string for MongoDB compatibility
+      const questionIdStr = typeof questionId === 'number' ? questionId.toString() : questionId;
       
       const response = await fetch(`/api/assessments/${assessmentId}/submit-answer`, {
         method: 'POST',
@@ -161,7 +165,7 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         credentials: 'include',
         body: JSON.stringify({
           assessmentId,
-          questionId,
+          questionId: questionIdStr,
           answer
         })
       });
@@ -262,26 +266,32 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
   };
 
   // Handle answer selection
-  const handleAnswerSelect = (questionId: number, answer: string) => {
+  const handleAnswerSelect = (questionId: string | number, answer: string) => {
+    // Convert questionId to string for MongoDB compatibility
+    const questionIdStr = typeof questionId === 'number' ? questionId.toString() : questionId;
+    
     setUserAnswers(prev => {
       const updated = new Map(prev);
-      updated.set(questionId, answer);
+      updated.set(questionIdStr, answer);
       return updated;
     });
 
-    submitAnswerMutation.mutate({ questionId, answer });
+    submitAnswerMutation.mutate({ questionId: questionIdStr, answer });
   };
   
   // Handle clearing an answer
-  const handleClearAnswer = (questionId: number) => {
+  const handleClearAnswer = (questionId: string | number) => {
+    // Convert questionId to string for MongoDB compatibility
+    const questionIdStr = typeof questionId === 'number' ? questionId.toString() : questionId;
+    
     setUserAnswers(prev => {
       const updated = new Map(prev);
-      updated.delete(questionId);
+      updated.delete(questionIdStr);
       return updated;
     });
     
     // Submit empty string to clear the answer on the server
-    submitAnswerMutation.mutate({ questionId, answer: "" });
+    submitAnswerMutation.mutate({ questionId: questionIdStr, answer: "" });
     
     toast({
       title: "Response Cleared",
