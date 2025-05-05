@@ -17,35 +17,38 @@ export type InsertAnswer = Pick<Answer, "assessmentId" | "questionId" | "answer"
 
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string | number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByStudentId(studentId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllStudents(): Promise<User[]>;
   
   // Question operations
-  getQuestion(id: number): Promise<Question | undefined>;
+  getQuestion(id: string | number): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
-  updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
-  deleteQuestion(id: number): Promise<boolean>;
+  updateQuestion(id: string | number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
+  deleteQuestion(id: string | number): Promise<boolean>;
   getAllQuestions(): Promise<Question[]>;
   getRandomQuestions(count: number): Promise<Question[]>;
   
   // Assessment operations
-  getAssessment(id: number): Promise<Assessment | undefined>;
-  getAssessmentsByUser(userId: number): Promise<Assessment[]>;
+  getAssessment(id: string | number): Promise<Assessment | undefined>;
+  getAssessmentsByUser(userId: string | number): Promise<Assessment[]>;
   createAssessment(assessment: InsertAssessment): Promise<Assessment>;
-  updateAssessment(id: number, data: Partial<Assessment>): Promise<Assessment | undefined>;
+  updateAssessment(id: string | number, data: Partial<Assessment>): Promise<Assessment | undefined>;
   getAllAssessments(): Promise<Assessment[]>;
   
   // Answer operations
-  getAnswer(id: number): Promise<Answer | undefined>;
-  getAnswersByAssessment(assessmentId: number): Promise<Answer[]>;
+  getAnswer(id: string | number): Promise<Answer | undefined>;
+  getAnswersByAssessment(assessmentId: string | number): Promise<Answer[]>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
-  updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined>;
+  updateAnswer(id: string | number, data: Partial<InsertAnswer>): Promise<Answer | undefined>;
   
   // Session store for authentication
   sessionStore: session.Store;
+  
+  // MongoDB specific - initialize session store with established client
+  initSessionStore?(client: any): void;
 }
 
 export class MemStorage implements IStorage {
@@ -331,9 +334,10 @@ export class MongoDBStorage implements IStorage {
   }
   
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string | number): Promise<User | undefined> {
     try {
-      const user = await User.findById(String(id));
+      const idStr = typeof id === 'number' ? String(id) : id;
+      const user = await User.findById(idStr);
       return this.documentToObject(user);
     } catch (error) {
       console.error('Error getting user:', error);
@@ -383,9 +387,10 @@ export class MongoDBStorage implements IStorage {
   }
   
   // Question operations
-  async getQuestion(id: number): Promise<Question | undefined> {
+  async getQuestion(id: string | number): Promise<Question | undefined> {
     try {
-      const question = await Question.findById(String(id));
+      const idStr = typeof id === 'number' ? String(id) : id;
+      const question = await Question.findById(idStr);
       return this.documentToObject(question);
     } catch (error) {
       console.error('Error getting question:', error);
@@ -404,10 +409,11 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async updateQuestion(id: number, questionData: Partial<InsertQuestion>): Promise<Question | undefined> {
+  async updateQuestion(id: string | number, questionData: Partial<InsertQuestion>): Promise<Question | undefined> {
     try {
+      const idStr = typeof id === 'number' ? String(id) : id;
       const updatedQuestion = await Question.findByIdAndUpdate(
-        String(id),
+        idStr,
         { $set: questionData },
         { new: true }
       );
@@ -489,9 +495,10 @@ export class MongoDBStorage implements IStorage {
   }
   
   // Assessment operations
-  async getAssessment(id: number): Promise<Assessment | undefined> {
+  async getAssessment(id: string | number): Promise<Assessment | undefined> {
     try {
-      const assessment = await Assessment.findById(String(id));
+      const idStr = typeof id === 'number' ? String(id) : id;
+      const assessment = await Assessment.findById(idStr);
       return this.documentToObject(assessment);
     } catch (error) {
       console.error('Error getting assessment:', error);
@@ -548,9 +555,10 @@ export class MongoDBStorage implements IStorage {
   }
   
   // Answer operations
-  async getAnswer(id: number): Promise<Answer | undefined> {
+  async getAnswer(id: string | number): Promise<Answer | undefined> {
     try {
-      const answer = await Answer.findById(String(id));
+      const idStr = typeof id === 'number' ? String(id) : id;
+      const answer = await Answer.findById(idStr);
       return this.documentToObject(answer);
     } catch (error) {
       console.error('Error getting answer:', error);
@@ -560,7 +568,7 @@ export class MongoDBStorage implements IStorage {
   
   async getAnswersByAssessment(assessmentId: number): Promise<Answer[]> {
     try {
-      const answers = await Answer.find({ assessmentId });
+      const answers = await Answer.find({ assessmentId: String(assessmentId) });
       return answers.map(answer => this.documentToObject(answer));
     } catch (error) {
       console.error('Error getting answers by assessment:', error);

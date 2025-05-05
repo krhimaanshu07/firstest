@@ -60,11 +60,11 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user: SchemaUser, done) => done(null, user.id));
+  passport.serializeUser((user: any, done) => done(null, user.id));
   
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     try {
-      const user = await storage.getUser(id);
+      const user = await storage.getUser(parseInt(id, 10) || id);
       done(null, user);
     } catch (error) {
       done(error);
