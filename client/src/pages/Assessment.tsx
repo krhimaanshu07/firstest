@@ -80,6 +80,17 @@ export default function Assessment({ onLogout }: StudentAssessmentProps) {
         updateTime(assessmentData.timeRemaining);
       }
       
+      // Initialize user answers from existing studentAnswers in the questions
+      const initialAnswers = new Map<number, string>();
+      if (assessmentData.questions) {
+        assessmentData.questions.forEach(question => {
+          if (question.studentAnswer) {
+            initialAnswers.set(question.id, question.studentAnswer);
+          }
+        });
+      }
+      setUserAnswers(initialAnswers);
+      
       startTimer();
     }
   }, [assessmentData, startTimer, updateTime]);

@@ -122,11 +122,48 @@ export class MemStorage implements IStorage {
     return Array.from(this.questions.values());
   }
   
+  // Fisher-Yates algorithm for better randomization
+  private shuffleArray<T>(array: T[]): T[] {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+  
+  // Randomize answer options while preserving correct answer
+  private randomizeOptions(question: Question): Question {
+    // For multiple-choice questions, randomize the options
+    if (question.type === 'multiple-choice' && question.options) {
+      // Keep track of the correct answer
+      const correctAnswer = question.correctAnswer;
+      
+      // Shuffle the options
+      const shuffledOptions = this.shuffleArray(question.options);
+      
+      // Return a new question with shuffled options
+      return {
+        ...question,
+        options: shuffledOptions,
+        // Original correctAnswer (e.g. "Option A") stays the same
+        correctAnswer
+      };
+    }
+    
+    // For other question types or if no options, return as is
+    return question;
+  }
+
   async getRandomQuestions(count: number): Promise<Question[]> {
     const allQuestions = Array.from(this.questions.values());
-    // Shuffle and select count number of questions
-    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, Math.min(count, shuffled.length));
+    
+    // First, randomize the order of questions
+    const shuffledQuestions = this.shuffleArray(allQuestions);
+    const selectedQuestions = shuffledQuestions.slice(0, Math.min(count, shuffledQuestions.length));
+    
+    // Then randomize options for each question
+    return selectedQuestions.map(q => this.randomizeOptions(q));
   }
   
   // Assessment operations

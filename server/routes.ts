@@ -273,9 +273,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const assessmentAnswers = await storage.getAnswersByAssessment(activeAssessment.id);
         const answeredQuestionIds = assessmentAnswers.map(a => a.questionId);
         
-        // Get questions not yet answered
-        const allQuestions = await storage.getAllQuestions();
-        const remainingQuestions = allQuestions.filter(q => !answeredQuestionIds.includes(q.id));
+        // Get randomized questions - we'll mix both answered and unanswered questions
+        // but will mark which ones have been answered already
+        const questions = await storage.getRandomQuestions(40);
+        
+        // Create a map of already answered questions for quick lookup
+        const answeredQuestionsMap = new Map();
+        for (const answer of assessmentAnswers) {
+          answeredQuestionsMap.set(answer.questionId, answer.answer);
+        }
+        
+        // Tag questions with the student's answers where applicable
+        const questionsWithAnswers = questions.map(q => ({
+          ...q,
+          studentAnswer: answeredQuestionsMap.has(q.id) ? answeredQuestionsMap.get(q.id) : undefined
+        }));
 
         return res.status(200).json({
           assessmentId: activeAssessment.id,
@@ -283,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           answeredQuestions: assessmentAnswers.length,
           totalQuestions: 40,
           isComplete: activeAssessment.isComplete,
-          questions: remainingQuestions.slice(0, 40 - assessmentAnswers.length)
+          questions: questionsWithAnswers
         });
       }
 
