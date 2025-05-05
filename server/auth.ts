@@ -9,7 +9,15 @@ import { User as SchemaUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends SchemaUser {}
+    interface User {
+      id: string;
+      username: string;
+      password: string;
+      role: string;
+      email?: string;
+      studentId?: string;
+      registrationDate: Date;
+    }
   }
 }
 
@@ -105,7 +113,7 @@ export function setupAuth(app: Express) {
 
       // Login the user after registration (for students)
       if (role !== "admin") {
-        req.login(user, (err) => {
+        req.login(user as unknown as Express.User, (err) => {
           if (err) return next(err);
           // Don't send the password back to the client
           const { password, ...userWithoutPassword } = user;
@@ -122,7 +130,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: SchemaUser | false, info: any) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -155,7 +163,7 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     // Don't send the password back to the client
-    const { password, ...userWithoutPassword } = req.user as SchemaUser;
+    const { password, ...userWithoutPassword } = req.user as Express.User;
     res.json(userWithoutPassword);
   });
 }

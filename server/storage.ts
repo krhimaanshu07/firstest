@@ -424,9 +424,10 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async deleteQuestion(id: number): Promise<boolean> {
+  async deleteQuestion(id: string | number): Promise<boolean> {
     try {
-      const result = await Question.findByIdAndDelete(String(id));
+      const idStr = typeof id === 'number' ? String(id) : id;
+      const result = await Question.findByIdAndDelete(idStr);
       return !!result;
     } catch (error) {
       console.error('Error deleting question:', error);
@@ -506,9 +507,10 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async getAssessmentsByUser(userId: number): Promise<Assessment[]> {
+  async getAssessmentsByUser(userId: string | number): Promise<Assessment[]> {
     try {
-      const assessments = await Assessment.find({ userId: String(userId) });
+      const userIdStr = typeof userId === 'number' ? String(userId) : userId;
+      const assessments = await Assessment.find({ userId: userIdStr });
       return assessments.map(assessment => this.documentToObject(assessment));
     } catch (error) {
       console.error('Error getting assessments by user:', error);
@@ -530,10 +532,11 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async updateAssessment(id: number, data: Partial<Assessment>): Promise<Assessment | undefined> {
+  async updateAssessment(id: string | number, data: Partial<Assessment>): Promise<Assessment | undefined> {
     try {
+      const idStr = typeof id === 'number' ? String(id) : id;
       const updatedAssessment = await Assessment.findByIdAndUpdate(
-        String(id),
+        idStr,
         { $set: data },
         { new: true }
       );
@@ -566,9 +569,10 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async getAnswersByAssessment(assessmentId: number): Promise<Answer[]> {
+  async getAnswersByAssessment(assessmentId: string | number): Promise<Answer[]> {
     try {
-      const answers = await Answer.find({ assessmentId: String(assessmentId) });
+      const assessmentIdStr = typeof assessmentId === 'number' ? String(assessmentId) : assessmentId;
+      const answers = await Answer.find({ assessmentId: assessmentIdStr });
       return answers.map(answer => this.documentToObject(answer));
     } catch (error) {
       console.error('Error getting answers by assessment:', error);
@@ -587,10 +591,11 @@ export class MongoDBStorage implements IStorage {
     }
   }
   
-  async updateAnswer(id: number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
+  async updateAnswer(id: string | number, data: Partial<InsertAnswer>): Promise<Answer | undefined> {
     try {
+      const idStr = typeof id === 'number' ? String(id) : id;
       const updatedAnswer = await Answer.findByIdAndUpdate(
-        String(id),
+        idStr,
         { $set: data },
         { new: true }
       );
