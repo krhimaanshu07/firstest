@@ -585,6 +585,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add 40 fresh CS questions - admin only
+  app.post("/api/questions/add-cs-questions", requireAdmin, async (req, res) => {
+    try {
+      // Pass the storage directly since we've made the function accept any type
+      const result = await addCSQuestions(storage);
+      return res.status(200).json(result);
+    } catch (err) {
+      const error = err as Error;
+      return res.status(500).json({ message: "Server error", error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

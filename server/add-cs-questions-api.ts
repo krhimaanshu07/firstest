@@ -5,7 +5,7 @@ import { Question, InsertQuestion } from '@shared/schema';
  * Adds 40 fresh computer science questions to the database
  * Designed to be called from an API endpoint
  */
-export async function addCSQuestions(storage: MongoDBStorage) {
+export async function addCSQuestions(storage: any) {
   try {
     // Define 40 questions
     const questions: InsertQuestion[] = [
@@ -592,7 +592,8 @@ export async function addCSQuestions(storage: MongoDBStorage) {
     
     return { success: true, count: addedCount };
     
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Failed to add questions:', error);
     return { success: false, error: error.message };
   }
