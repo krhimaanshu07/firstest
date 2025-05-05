@@ -1,46 +1,23 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import session from "express-session";
 import { 
-  loginSchema, 
-  insertUserSchema, 
   registerStudentSchema, 
   insertQuestionSchema,
   insertAssessmentSchema,
   insertAnswerSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 
-// Extend Express Session
-declare module 'express-session' {
-  interface SessionData {
-    userId: number;
-    role: string;
-    assessmentId?: number;
-  }
-}
-
-const SESSION_SECRET = process.env.SESSION_SECRET || "dev-session-secret";
-const TWO_HOURS_IN_MS = 7200000;
+// Constants
+const TWO_HOURS_IN_MS = 7200000; // 2 hours in milliseconds
+const TWO_HOURS_IN_SECONDS = 7200; // 2 hours in seconds
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session middleware
-  app.use(
-    session({
-      secret: SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: { 
-        secure: process.env.NODE_ENV === "production",
-        maxAge: TWO_HOURS_IN_MS
-      }
-    })
-  );
-
-  // Auth middleware for protected routes
+  // Auth middleware for protected routes (using passport auth)
   const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.session.userId) {
+    if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
@@ -48,69 +25,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin-only middleware
   const requireAdmin = (req: Request, res: Response, next: Function) => {
-    if (!req.session.userId || req.session.role !== "admin") {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
       return res.status(403).json({ message: "Forbidden - Admin only" });
     }
     next();
   };
 
-  // Auth routes
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const credentials = loginSchema.parse(req.body);
-      const user = await storage.getUserByUsername(credentials.username);
-      
-      if (!user || user.password !== credentials.password) {  // In production use bcrypt
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      req.session.userId = user.id;
-      req.session.role = user.role;
-
-      return res.status(200).json({
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        studentId: user.studentId
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      return res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Failed to logout" });
-      }
-      res.clearCookie("connect.sid");
-      return res.status(200).json({ message: "Logged out successfully" });
-    });
-  });
-
-  app.get("/api/auth/me", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      return res.status(200).json({
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        studentId: user.studentId,
-        email: user.email
-      });
-    } catch (error) {
-      return res.status(500).json({ message: "Server error" });
-    }
-  });
+  // Auth routes are set up in auth.ts
 
   // Student registration
   app.post("/api/students/register", requireAdmin, async (req, res) => {
@@ -256,18 +177,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assessments/start", requireAuth, async (req, res) => {
     try {
       // Only students can take assessments
-      if (req.session.role !== "student") {
+      if (req.user.role !== "student") {
         return res.status(403).json({ message: "Only students can take assessments" });
       }
 
       // Check if student already has an active assessment
-      const userId = req.session.userId!;
+      const userId = req.user.id;
       const userAssessments = await storage.getAssessmentsByUser(userId);
       const activeAssessment = userAssessments.find(a => !a.isComplete);
 
       if (activeAssessment) {
         // Continue existing assessment
-        req.session.assessmentId = activeAssessment.id;
         
         // Calculate questions to fetch
         const assessmentAnswers = await storage.getAnswersByAssessment(activeAssessment.id);
@@ -300,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Start a new assessment
-      const DEFAULT_ASSESSMENT_TIME = 7200; // 2 hours in seconds
+      const DEFAULT_ASSESSMENT_TIME = TWO_HOURS_IN_SECONDS; // 2 hours in seconds
       
       const assessment = await storage.createAssessment({
         userId,
@@ -310,8 +230,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get 40 questions for the assessment
       const questions = await storage.getRandomQuestions(40);
-      
-      req.session.assessmentId = assessment.id;
       
       return res.status(201).json({
         assessmentId: assessment.id,
@@ -339,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.session.userId) {
+      if (assessment.userId !== req.user.id) {
         return res.status(403).json({ message: "Not authorized to submit answer to this assessment" });
       }
 
@@ -430,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.session.userId) {
+      if (assessment.userId !== req.user.id) {
         return res.status(403).json({ message: "Not authorized to update this assessment" });
       }
 
@@ -485,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      if (assessment.userId !== req.session.userId) {
+      if (assessment.userId !== req.user.id) {
         return res.status(403).json({ message: "Not authorized to complete this assessment" });
       }
 
