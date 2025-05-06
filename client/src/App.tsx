@@ -39,6 +39,7 @@ function App() {
         },
         body: JSON.stringify({ username, password }),
         credentials: "include",
+        mode: "cors",
       });
       
       if (response.ok) {
@@ -47,6 +48,8 @@ function App() {
         setIsAuthenticated(true);
         return true;
       } else {
+        const errorData = await response.json();
+        console.error("Login failed:", errorData);
         setUser(null);
         setIsAuthenticated(false);
         return false;
@@ -66,6 +69,7 @@ function App() {
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
+        mode: "cors",
       });
       setUser(null);
       setIsAuthenticated(false);
@@ -81,6 +85,7 @@ function App() {
         setIsLoading(true);
         const response = await fetch("/api/auth/me", {
           credentials: "include",
+          mode: "cors",
         });
 
         if (response.ok) {

@@ -34,9 +34,12 @@ async function setupApp() {
 
   // Middleware
   app.use(cors({
-    origin: '*',
+    origin: process.env.NODE_ENV === 'production' 
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:5000',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -57,6 +60,8 @@ async function setupApp() {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? process.env.VERCEL_URL : undefined
     },
   }));
 
