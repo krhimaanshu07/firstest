@@ -7,17 +7,15 @@
       "config": { "distDir": "dist/public" }
     },
     {
-      "src": "api/[...slug].js",
+      "src": "api/*.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/[...slug].js" },
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
     { "src": "/(.*)",      "dest": "/$1" }
   ],
   "env": {
-    "NODE_ENV":       "production",
-    "MONGO_DB":       "MONGO_DB",
-    "SESSION_SECRET": "SESSION_SECRET"
+    "NODE_ENV": "production"
   }
 }
