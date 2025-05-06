@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Clean the entire dist directory to prevent stale files
+rm -rf dist
+
 # 1. Run Vite build
 echo "▶ Running Vite build…"
 vite build
@@ -23,9 +26,9 @@ echo "▶ Updating import paths…"
 # First, normalize all imports to use .js extension
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS version
-  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"]*\)"/from ".\1.js"/g' {} +
-  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"]*\)\.ts"/from ".\1.js"/g' {} +
-  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "@shared\/\([^"]*\)"/from "..\/shared\/\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"\)]*\)"/from ".\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"\)]*\)\.ts"/from ".\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i '' 's/from "@shared\/\([^"\)]*\)"/from "..\/shared\/\1.js"/g' {} +
 
   # Fix any double .js.js extensions
   find dist/server -type f -name "*.js" -exec sed -i '' 's/\.js\.js/.js/g' {} +
@@ -44,13 +47,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
   # Fix imports in shared modules
   echo "▶ Fixing shared module imports…"
-  find dist/shared -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"]*\)"/from ".\1.js"/g' {} +
-  find dist/shared -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"]*\)\.ts"/from ".\1.js"/g' {} +
+  find dist/shared -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"\)]*\)"/from ".\1.js"/g' {} +
+  find dist/shared -type f -name "*.js" -exec sed -i '' 's/from "\.\([^"\)]*\)\.ts"/from ".\1.js"/g' {} +
 else
   # Linux/other version
-  find dist/server -type f -name "*.js" -exec sed -i 's/from "\.\([^"]*\)"/from ".\1.js"/g' {} +
-  find dist/server -type f -name "*.js" -exec sed -i 's/from "\.\([^"]*\)\.ts"/from ".\1.js"/g' {} +
-  find dist/server -type f -name "*.js" -exec sed -i 's/from "@shared\/\([^"]*\)"/from "..\/shared\/\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i 's/from "\.\([^"\)]*\)"/from ".\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i 's/from "\.\([^"\)]*\)\.ts"/from ".\1.js"/g' {} +
+  find dist/server -type f -name "*.js" -exec sed -i 's/from "@shared\/\([^"\)]*\)"/from "..\/shared\/\1.js"/g' {} +
 
   # Fix any double .js.js extensions
   find dist/server -type f -name "*.js" -exec sed -i 's/\.js\.js/.js/g' {} +
@@ -69,8 +72,8 @@ else
 
   # Fix imports in shared modules
   echo "▶ Fixing shared module imports…"
-  find dist/shared -type f -name "*.js" -exec sed -i 's/from "\.\([^"]*\)"/from ".\1.js"/g' {} +
-  find dist/shared -type f -name "*.js" -exec sed -i 's/from "\.\([^"]*\)\.ts"/from ".\1.js"/g' {} +
+  find dist/shared -type f -name "*.js" -exec sed -i 's/from "\.\([^"\)]*\)"/from ".\1.js"/g' {} +
+  find dist/shared -type f -name "*.js" -exec sed -i 's/from "\.\([^"\)]*\)\.ts"/from ".\1.js"/g' {} +
 fi
 
 echo "✅ build-vercel.sh completed successfully."
