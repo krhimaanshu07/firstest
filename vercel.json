@@ -7,7 +7,7 @@
       "config": { "distDir": "dist/public" }
     },
     {
-      "src": "api/[...slug].cjs",
+      "src": "api/[...slug].js",
       "use": "@vercel/node"
     }
   ],
