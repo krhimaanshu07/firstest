@@ -19,6 +19,7 @@ export default defineConfig({
             }
         }
     },
+    root: 'client',
     server: {
         port: 5000,
         proxy: {
