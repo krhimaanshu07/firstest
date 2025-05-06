@@ -1,22 +1,27 @@
-import { MongoDBStorage } from './storage';
+import { storage } from './storage';
 import { connectToMongoDB } from './mongodb';
-import { Question } from '@shared/schema';
-import { storage, InsertQuestion } from './storage.js';
+
+interface CSQuestion {
+  title: string;
+  content: string;
+  type: string;
+  category: string;
+  difficulty: string;
+  options: string[];
+  correctAnswer: string;
+}
 
 /**
  * Adds 40 fresh computer science questions to the database
  */
 async function addCSQuestions() {
   try {
-    // Connect to MongoDB
+    // Connect to MongoDB first
     await connectToMongoDB();
     console.log('Connected to MongoDB successfully');
     
-    // Initialize storage
-    const storage = new MongoDBStorage();
-    
     // Define 40 questions
-    const questions: Omit<Question, 'id'>[] = [
+    const questions: Omit<CSQuestion, 'id'>[] = [
       {
         title: "Big O Notation",
         content: "What is the time complexity of binary search?",
@@ -587,16 +592,7 @@ async function addCSQuestions() {
     
     for (const question of questions) {
       try {
-        const q: InsertQuestion = {
-          title: question.title,
-          content: question.content,
-          type: question.type,
-          category: question.category,
-          difficulty: question.difficulty,
-          options: question.options || [],
-          correctAnswer: question.correctAnswer
-        };
-        await storage.createQuestion(q);
+        await storage.createQuestion(question);
         addedCount++;
       } catch (error) {
         console.error(`Error adding question "${question.title}":`, error);

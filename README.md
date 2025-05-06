@@ -1,105 +1,78 @@
-# Computer Science Assessment System
+# Computer Science Assessment Platform
 
-A modern web application for conducting computer science assessments, built with React, Express, and MongoDB.
+A comprehensive computer science assessment platform offering advanced MCQ testing with robust features. Designed to provide an engaging and efficient learning experience for technical skill evaluation.
 
 ## Features
 
-- User authentication and authorization
-- Multiple choice and coding questions
-- Real-time assessment tracking
-- Automatic grading
-- Student progress monitoring
-- Beautiful UI with Tailwind CSS and Radix UI
+- 40 multiple-choice questions
+- 2-hour timer that persists across sessions
+- Progress saving for students
+- Student management for administrators
+- Result viewing for administrators
+- Assessment restriction (24-hour cooldown)
 
-## Tech Stack
+## Technologies Used
 
-- **Frontend**: React, TypeScript, Tailwind CSS, Radix UI
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: MongoDB
-- **Authentication**: Passport.js
-- **Build Tools**: Vite, ESBuild
-- **Deployment**: Vercel
+- React.js frontend
+- Express.js backend
+- TypeScript implementation
+- MongoDB Atlas integration
+- Authentication with Passport.js
 
-## Getting Started
+## Vercel Deployment Instructions
 
 ### Prerequisites
+- A [Vercel](https://vercel.com) account
+- A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) database
 
-- Node.js 18 or later
-- MongoDB database
-- npm or yarn
+### Step 1: Fork or Clone the Repository
+Clone this repository to your GitHub account.
 
-### Installation
+### Step 2: Set Up MongoDB Atlas
+1. Create a MongoDB Atlas account if you don't have one
+2. Create a new cluster (the free tier is sufficient)
+3. Create a database user with read/write permissions
+4. Add your IP address to the IP allowlist (or use 0.0.0.0/0 for all IPs)
+5. Get your connection string from Atlas
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd computer-science-assessment
+### Step 3: Deploy to Vercel
+1. Log in to your Vercel account
+2. Click "New Project"
+3. Import your GitHub repository
+4. Configure the project:
+   - Build Command: `./build-script.sh`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+
+5. Add the following environment variables:
+   - `MONGO_DB`: Your MongoDB Atlas connection string
+   - `SESSION_SECRET`: A long, random string for session security
+
+6. Click "Deploy"
+
+### Step 4: Verify the Deployment
+1. Once deployment is complete, click the provided URL
+2. Log in with the default credentials:
+   - Admin: username `admin`, password `admin123`
+   - Student: username `2001086`, password `password`
+
+## Local Development
+
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Create a `.env` file with the following contents:
    ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in the root directory:
-   ```env
-   MONGO_DB=your_mongodb_uri
+   MONGO_DB=your_mongodb_connection_string
    SESSION_SECRET=your_session_secret
-   NODE_ENV=development
    ```
+4. Run the development server with `npm run dev`
+5. Access the application at http://localhost:5000
 
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+## Default Login Credentials
 
-### Building for Production
-
-```bash
-npm run build
-```
-
-### Running in Production
-
-```bash
-npm start
-```
-
-## Project Structure
-
-```
-├── client/             # Frontend React application
-├── server/            # Backend Express application
-├── shared/            # Shared types and utilities
-├── api/              # Vercel serverless functions
-├── public/           # Static assets
-└── dist/             # Build output
-```
-
-## Environment Variables
-
-- `MONGO_DB`: MongoDB connection URI
-- `SESSION_SECRET`: Secret for session management
-- `NODE_ENV`: Environment (development/production)
-
-## Deployment
-
-The application is configured for deployment on Vercel:
-
-1. Push your code to GitHub
-2. Create a new project on Vercel
-3. Connect your GitHub repository
-4. Configure environment variables
-5. Deploy!
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Admin**
+  - Username: `admin`
+  - Password: `admin123`
+- **Student**
+  - Username: `2001086`
+  - Password: `password`

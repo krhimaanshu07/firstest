@@ -1,5 +1,5 @@
 import session from "express-session";
-import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models.js";
+import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
 
@@ -10,7 +10,7 @@ export type Assessment = Omit<IAssessment, keyof mongoose.Document> & { id: stri
 export type Answer = Omit<IAnswer, keyof mongoose.Document> & { id: string };
 
 // For the insert types, we use simplified versions that don't include the id
-export type InsertUser = Pick<User, "username" | "password" | "role" | "email"> & { studentId?: string };
+export type InsertUser = Pick<User, "username" | "password" | "role" | "email" | "studentId">;
 export type InsertQuestion = Pick<Question, "title" | "content" | "type" | "category" | "difficulty" | "options" | "correctAnswer">;
 export type InsertAssessment = Pick<Assessment, "userId" | "startTime" | "timeRemaining">;
 export type InsertAnswer = Pick<Answer, "assessmentId" | "questionId" | "answer" | "isCorrect">;
@@ -90,7 +90,8 @@ export class MemStorage implements IStorage {
       username: "admin",
       password: "admin123", // In a real app, this would be hashed
       role: "admin",
-      email: "admin@example.com"
+      email: "admin@example.com",
+      studentId: "ADMIN"
     });
 
     // Initialize with sample CS questions
@@ -601,11 +602,15 @@ export class MongoDBStorage implements IStorage {
   
   async getRandomQuestions(count: number): Promise<Question[]> {
     try {
+      // For MongoDB we can use aggregation with $sample to get random questions
       const questions = await Question.aggregate([
         { $sample: { size: count } }
       ]);
       
+      // Convert Mongoose documents to plain objects
       const plainQuestions = questions.map((q: any) => ({ ...q, id: q._id.toString() }));
+      
+      // Then randomize options for each question
       return plainQuestions.map((q: Question) => this.randomizeOptions(q));
     } catch (error) {
       console.error('Error getting random questions:', error);

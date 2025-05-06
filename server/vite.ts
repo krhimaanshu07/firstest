@@ -1,12 +1,10 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
-import { type Server } from "http";
+import { createServer, type ViteDevServer, type ServerOptions, type LogLevel } from "vite";
+import type { Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
-
-const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -20,29 +18,20 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: {
-      server: server
-    },
-    allowedHosts: ['localhost', '127.0.0.1']
-  };
-
-  const vite = await createViteServer({
+  // Create Vite server in middleware mode
+  const vite = await createServer({
     ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
-    server: serverOptions,
-    appType: "custom",
+    server: {
+      middlewareMode: true,
+      hmr: {
+        server: server
+      }
+    }
   });
 
+  // Use vite's connect instance as middleware
   app.use(vite.middlewares);
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
@@ -67,6 +56,8 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+
+  return vite;
 }
 
 export function serveStatic(app: Express) {
