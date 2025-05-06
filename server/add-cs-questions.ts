@@ -1,6 +1,7 @@
 import { MongoDBStorage } from './storage';
 import { connectToMongoDB } from './mongodb';
 import { Question } from '@shared/schema';
+import { storage, InsertQuestion } from './storage.js';
 
 /**
  * Adds 40 fresh computer science questions to the database
@@ -586,7 +587,16 @@ async function addCSQuestions() {
     
     for (const question of questions) {
       try {
-        await storage.createQuestion(question);
+        const q: InsertQuestion = {
+          title: question.title,
+          content: question.content,
+          type: question.type,
+          category: question.category,
+          difficulty: question.difficulty,
+          options: question.options || [],
+          correctAnswer: question.correctAnswer
+        };
+        await storage.createQuestion(q);
         addedCount++;
       } catch (error) {
         console.error(`Error adding question "${question.title}":`, error);

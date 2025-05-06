@@ -1,5 +1,5 @@
 import session from "express-session";
-import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models";
+import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models.js";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
 
@@ -10,7 +10,7 @@ export type Assessment = Omit<IAssessment, keyof mongoose.Document> & { id: stri
 export type Answer = Omit<IAnswer, keyof mongoose.Document> & { id: string };
 
 // For the insert types, we use simplified versions that don't include the id
-export type InsertUser = Pick<User, "username" | "password" | "role" | "email" | "studentId">;
+export type InsertUser = Pick<User, "username" | "password" | "role" | "email"> & { studentId?: string };
 export type InsertQuestion = Pick<Question, "title" | "content" | "type" | "category" | "difficulty" | "options" | "correctAnswer">;
 export type InsertAssessment = Pick<Assessment, "userId" | "startTime" | "timeRemaining">;
 export type InsertAnswer = Pick<Answer, "assessmentId" | "questionId" | "answer" | "isCorrect">;
@@ -459,7 +459,7 @@ export class MongoDBStorage implements IStorage {
   async getAllStudents(): Promise<User[]> {
     try {
       const students = await User.find({ role: 'student' });
-      return students.map(student => this.documentToObject(student));
+      return students.map((student: mongoose.Document) => this.documentToObject(student));
     } catch (error) {
       console.error('Error getting all students:', error);
       return [];
@@ -560,7 +560,7 @@ export class MongoDBStorage implements IStorage {
   async getAllQuestions(): Promise<Question[]> {
     try {
       const questions = await Question.find();
-      return questions.map(question => this.documentToObject(question));
+      return questions.map((question: mongoose.Document) => this.documentToObject(question));
     } catch (error) {
       console.error('Error getting all questions:', error);
       return [];
@@ -601,16 +601,12 @@ export class MongoDBStorage implements IStorage {
   
   async getRandomQuestions(count: number): Promise<Question[]> {
     try {
-      // For MongoDB we can use aggregation with $sample to get random questions
       const questions = await Question.aggregate([
         { $sample: { size: count } }
       ]);
       
-      // Convert Mongoose documents to plain objects
-      const plainQuestions = questions.map(q => ({ ...q, id: q._id.toString() }));
-      
-      // Then randomize options for each question
-      return plainQuestions.map(q => this.randomizeOptions(q));
+      const plainQuestions = questions.map((q: any) => ({ ...q, id: q._id.toString() }));
+      return plainQuestions.map((q: Question) => this.randomizeOptions(q));
     } catch (error) {
       console.error('Error getting random questions:', error);
       return [];
@@ -647,7 +643,7 @@ export class MongoDBStorage implements IStorage {
     try {
       const userIdStr = typeof userId === 'number' ? String(userId) : userId;
       const assessments = await Assessment.find({ userId: userIdStr });
-      return assessments.map(assessment => this.documentToObject(assessment));
+      return assessments.map((assessment: mongoose.Document) => this.documentToObject(assessment));
     } catch (error) {
       console.error('Error getting assessments by user:', error);
       return [];
@@ -700,7 +696,7 @@ export class MongoDBStorage implements IStorage {
   async getAllAssessments(): Promise<Assessment[]> {
     try {
       const assessments = await Assessment.find().populate('userId');
-      return assessments.map(assessment => this.documentToObject(assessment));
+      return assessments.map((assessment: mongoose.Document) => this.documentToObject(assessment));
     } catch (error) {
       console.error('Error getting all assessments:', error);
       return [];
@@ -762,7 +758,7 @@ export class MongoDBStorage implements IStorage {
     try {
       const assessmentIdStr = typeof assessmentId === 'number' ? String(assessmentId) : assessmentId;
       const answers = await Answer.find({ assessmentId: assessmentIdStr });
-      return answers.map(answer => this.documentToObject(answer));
+      return answers.map((answer: mongoose.Document) => this.documentToObject(answer));
     } catch (error) {
       console.error('Error getting answers by assessment:', error);
       return [];

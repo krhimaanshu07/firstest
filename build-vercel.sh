@@ -1,29 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-# 1. Run your existing build (Vite → dist/public)
-echo "▶ Running npm build script…"
-npm run build
+# 1. Run Vite build
+echo "▶ Running Vite build…"
+vite build
 
 # 2. Clean only dist/server & dist/shared (keep dist/public intact)
 echo "▶ Cleaning server/shared directories…"
 rm -rf dist/server dist/shared
 mkdir -p dist/server dist/shared
 
-# 3. Compile server & shared TS (override noEmit)
+# 3. Compile server & shared TS
 echo "▶ Compiling server TypeScript…"
-tsc \
-  --project tsconfig.json \
-  --rootDir server \
-  --outDir dist/server \
-  --noEmit false
-
-echo "▶ Compiling shared TypeScript…"
-tsc \
-  --project tsconfig.json \
-  --rootDir shared \
-  --outDir dist/shared \
-  --noEmit false
+tsc -p tsconfig.server.json
 
 # 4. Copy any raw JS server files
 echo "▶ Copying extra JS server files…"
