@@ -1,4 +1,4 @@
-import { User } from './models';
+import { User } from './models.js';
 import { connectToMongoDB } from './mongodb';
 import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';

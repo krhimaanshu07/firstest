@@ -1,4 +1,4 @@
-import { MongoDBStorage } from './storage';
+import { MongoDBStorage } from './storage.js';
 import { Question, InsertQuestion } from '@shared/schema';
 
 /**
