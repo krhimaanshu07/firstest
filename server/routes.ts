@@ -1,6 +1,6 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage, MongoDBStorage } from "./storage";
+import { storage, MongoDBStorage } from "./storage.js";
 import { 
   registerStudentSchema, 
   insertQuestionSchema,
