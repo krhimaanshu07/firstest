@@ -1,70 +1,71 @@
-// Vercel-specific server setup
-require('dotenv').config();
-const express = require('express');
-const session = require('express-session');
-const { setupAuth } = require('./auth');
-const path = require('path');
+// File: server/vercel-setup.js
+// ES Module version of your Vercel-specific server setup
 
-// Function to set up the server for Vercel deployment
-async function setupServer(app, server) {
-  // Set up middlewares
+import 'dotenv/config';
+import express from 'express';
+import path from 'path';
+import { setupAuth } from './auth.js';
+import { createTestUsers } from './setup-test-users.js';
+import { registerRoutes } from './routes.js';
+
+/**
+ * Sets up the Express server with middleware, routes, and static file handling.
+ * @param {import('express').Express} app - The Express application instance.
+ * @param {import('http').Server} server - The HTTP server (unused here but available).
+ * @returns {import('express').Express} The configured Express app.
+ */
+export async function setupServer(app, server) {
+  // 1. Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
-  
-  // Initialize request logging middleware
+
+  // 2. Request logging middleware
   app.use((req, res, next) => {
     const start = Date.now();
-    const path = req.path;
-    let capturedJsonResponse = undefined;
+    const reqPath = req.path;
+    let capturedJsonResponse;
 
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
+    // Monkey-patch res.json to capture the JSON payload
+    const originalJson = res.json.bind(res);
+    res.json = (body, ...rest) => {
+      capturedJsonResponse = body;
+      return originalJson(body, ...rest);
     };
 
-    res.on("finish", () => {
-      const duration = Date.now() - start;
-      if (path.startsWith("/api")) {
-        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    res.on('finish', () => {
+      if (reqPath.startsWith('/api')) {
+        const duration = Date.now() - start;
+        let logLine = `${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`;
         if (capturedJsonResponse) {
           logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
         }
-
-        if (logLine.length > 80) {
-          logLine = logLine.slice(0, 79) + "…";
-        }
-
-        console.log(logLine);
+        console.log(logLine.length > 80 ? logLine.slice(0, 79) + '…' : logLine);
       }
     });
 
     next();
   });
-  
-  // Create test users
-  const { createTestUsers } = require('./setup-test-users');
+
+  // 3. Create test users (if applicable)
   await createTestUsers();
-  
-  // Setup authentication
+
+  // 4. Authentication setup
   setupAuth(app);
-  
-  // Register routes (MongoDB connection is already established by now)
-  const { registerRoutes } = require('./routes');
+
+  // 5. Register application routes
   await registerRoutes(app);
-  
-  // Error handling middleware
+
+  // 6. Error handling middleware
   app.use((err, _req, res, _next) => {
     console.error('Server error:', err);
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
+    res.status(status).json({ message: err.message || 'Internal Server Error' });
   });
-  
-  // Serve static files
+
+  // 7. Serve static assets from the client build
   app.use(express.static(path.join(process.cwd(), 'dist')));
-  
-  // Catch-all route to serve index.html for client-side routing
+
+  // 8. Catch-all for client-side routing (non-API routes)
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
@@ -72,8 +73,6 @@ async function setupServer(app, server) {
       res.status(404).json({ message: 'API endpoint not found' });
     }
   });
-  
+
   return app;
 }
-
-module.exports = { setupServer };
