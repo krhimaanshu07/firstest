@@ -18,15 +18,15 @@ async function initializeDatabase() {
     const Database = (await import('better-sqlite3')).default;
     db = drizzleSqlite(new Database(':memory:'));
   } else {
-    // Production mode: Use PostgreSQL
-    if (!process.env.DATABASE_URL) {
-      throw new Error(
-        "DATABASE_URL must be set in production. Did you forget to provision a database?",
-      );
+    // Production mode: Use PostgreSQL if available, otherwise skip
+    if (process.env.DATABASE_URL) {
+      console.log('Production mode: Using PostgreSQL database');
+      pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      db = drizzle({ client: pool, schema });
+    } else {
+      console.log('Production mode: No PostgreSQL database configured, skipping');
+      db = null;
     }
-
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool, schema });
   }
 }
 

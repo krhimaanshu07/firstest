@@ -1,4 +1,4 @@
-import { User, Question } from './models';
+import { User, Question } from './models.js';
 import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';
 import mongoose from 'mongoose';
