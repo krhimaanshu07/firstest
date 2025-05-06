@@ -77,7 +77,7 @@ app.use((req, res, next) => {
     }
 
     // Use PORT from environment variable with fallback to 5000
-    const port = process.env.PORT || 5000;
+    const port = parseInt(process.env.PORT || '5000', 10);
     
     // Fix for macOS: Use TCP options and explicitly handle errors
     try {
