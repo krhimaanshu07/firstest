@@ -1,4 +1,3 @@
-
 {
   "version": 2,
   "builds": [
@@ -8,13 +7,13 @@
       "config": { "distDir": "dist/public" }
     },
     {
-      "src": "api/api.js",
+      "src": "dist/server/api.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/api.js" },
-    { "src": "/(.*)",      "dest": "/$1" }
+    { "src": "/api/(.*)", "dest": "/dist/server/api.js" },
+    { "src": "/(.*)", "dest": "/dist/public/$1" }
   ],
   "env": {
     "NODE_ENV": "production"
