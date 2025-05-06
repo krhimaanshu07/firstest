@@ -1,5 +1,5 @@
 import session from "express-session";
-import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models";
+import { User, Question, Assessment, Answer, IUser, IQuestion, IAssessment, IAnswer } from "./models.js";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
 

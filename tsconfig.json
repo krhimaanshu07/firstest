@@ -18,6 +18,9 @@
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"]
-    }
+    },
+    "outDir": "./dist",
+    "rootDir": ".",
+    "target": "ESNext"
   }
 }

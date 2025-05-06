@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { User, Question, Assessment, Answer } from './models';
+import { User, Question, Assessment, Answer } from './models.js';
 
 /**
  * Sets up the MongoDB database by creating necessary indexes and collections

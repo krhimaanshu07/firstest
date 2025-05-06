@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
-import { setupMongoDBCollections } from './mongodb-setup';
+import { setupMongoDBCollections } from './mongodb-setup.js';
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +12,15 @@ let isAtlasConnection = false;
 // Connect to MongoDB - either real or in-memory
 export async function connectToMongoDB() {
   try {
+    // In development, always use in-memory database
+    if (process.env.NODE_ENV === 'development') {
+      mongoServer = await MongoMemoryServer.create();
+      const inMemoryUri = mongoServer.getUri();
+      await mongoose.connect(inMemoryUri);
+      console.log('Connected to MongoDB Memory Server successfully');
+      return mongoose.connection;
+    }
+
     // Check if we have a MongoDB connection string in environment variables
     const mongoUri = process.env.MONGO_DB;
     
@@ -48,7 +57,7 @@ export async function connectToMongoDB() {
     }
     
     // Initialize session store with the connected client
-    const { storage } = await import('./storage');
+    const { storage } = await import('./storage.js');
     if ('initSessionStore' in storage) {
       storage.initSessionStore(mongoose.connection.getClient());
       console.log('MongoDB session store initialized successfully');
