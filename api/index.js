@@ -88,7 +88,7 @@ async function setupApp() {
 
   // 7. Register custom routes
   try {
-    const routesModule = await import('../dist/server/routes/index.js');
+    const routesModule = await import('../dist/server/routes.js');
     await routesModule.registerRoutes(app);
   } catch (err) {
     console.error('Error registering routes:', err);
