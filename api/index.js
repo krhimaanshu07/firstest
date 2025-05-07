@@ -22,8 +22,13 @@ async function setupApp() {
   }
   if (mongoose.connection.readyState !== 1) {
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      connectTimeoutMS: 15000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      retryWrites: true,
+      retryReads: true
     });
     console.log('Connected to MongoDB Atlas');
   }
@@ -92,7 +97,13 @@ async function setupApp() {
   // 8. Error handler
   app.use((err, req, res, next) => {
     console.error('API Error:', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    const statusCode = err.statusCode || 500;
+    const errorResponse = {
+      error: err.name || 'Internal Server Error',
+      message: err.message || 'An unexpected error occurred',
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+    };
+    res.status(statusCode).json(errorResponse);
   });
 
   isSetup = true;
@@ -105,16 +116,19 @@ export default async function handler(req, res) {
     res.status(200).end();
     return;
   }
+  
   try {
     const expressApp = await setupApp();
     return expressApp(req, res);
   } catch (error) {
     console.error('Serverless function error:', error);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
-    });
+    const statusCode = error.statusCode || 500;
+    const errorResponse = {
+      error: error.name || 'Internal Server Error',
+      message: error.message || 'An unexpected error occurred',
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+    };
+    res.status(statusCode).json(errorResponse);
   }
 }
 
