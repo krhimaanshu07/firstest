@@ -71,7 +71,7 @@ async function setupApp() {
 
   // 5. Setup authentication
   try {
-    const { setupAuth } = await import('../dist/server/auth/index.js');
+    const { setupAuth } = await import('../dist/server/auth.js');
     setupAuth(app);
   } catch (err) {
     console.error('Error setting up auth:', err);
