@@ -64,7 +64,7 @@ async function setupApp() {
 
   // 4. Load models (side-effect)
   try {
-    await import('../dist/server/models/index.js');
+    await import('../dist/server/models.js');
   } catch (err) {
     console.error('Error loading models:', err);
   }
