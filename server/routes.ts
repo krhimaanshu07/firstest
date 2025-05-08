@@ -12,8 +12,8 @@ import { addCSQuestions } from "./add-cs-questions-api";
 import { eq, sql } from "drizzle-orm";
 
 // Constants
-const TWO_HOURS_IN_MS = 7200000; // 2 hours in milliseconds
-const TWO_HOURS_IN_SECONDS = 7200; // 2 hours in seconds
+const TWO_HOURS_IN_MS = 3600000; // 2 hours in milliseconds
+const TWO_HOURS_IN_SECONDS = 3600; // 2 hours in seconds
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware for protected routes (using passport auth)
