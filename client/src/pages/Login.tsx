@@ -125,7 +125,7 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="h-full flex items-center justify-center p-8">
           <div className="max-w-md text-white">
             <h1 className="text-3xl font-bold mb-4">
-              Computer Science Assessment Platform
+              Hemraj Assessment Platform
             </h1>
             <p className="text-blue-100 mb-8">
               Welcome to the Hemrajgroup Assessment platform. This assessment consists of 40
