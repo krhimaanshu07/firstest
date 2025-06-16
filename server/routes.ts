@@ -9,7 +9,6 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { addCSQuestions } from "./add-cs-questions-api";
-import { eq, sql } from "drizzle-orm";
 
 // Constants
 const TWO_HOURS_IN_MS = 3600000; // 2 hours in milliseconds
