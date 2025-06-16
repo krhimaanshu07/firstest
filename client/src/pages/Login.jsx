@@ -133,11 +133,11 @@ export default function Login(_a) {
         <div className="h-full flex items-center justify-center p-8">
           <div className="max-w-md text-white">
             <h1 className="text-3xl font-bold mb-4">
-              Computer Science Assessment Platform
+               Hemraj Assessment Platform
             </h1>
             <p className="text-blue-100 mb-8">
-              Welcome to the CS placement test platform. This assessment consists of 40
-              medium-difficulty computer science questions and has a time limit of 2 hours.
+              Welcome to the Hemrajgroup Assessment platform. This assessment consists of 40
+              medium-difficulty questions and has a time limit of 1 hours.
             </p>
 
             <ul className="space-y-4">
@@ -146,21 +146,20 @@ export default function Login(_a) {
                   <CheckCircle className="h-6 w-6 text-white"/>
                 </div>
                 <p>
-                  Multiple-choice and coding questions covering algorithms, data structures,
-                  and more
+                  This test contains Multiple-choice question
                 </p>
               </li>
               <li className="flex items-start">
                 <div className="flex-shrink-0 mr-2">
                   <CheckCircle className="h-6 w-6 text-white"/>
                 </div>
-                <p>Real-time progress tracking and automatic scoring</p>
+                <p>Please submit the test only once. Any additional submissions will result in disqualification.</p>
               </li>
               <li className="flex items-start">
                 <div className="flex-shrink-0 mr-2">
                   <CheckCircle className="h-6 w-6 text-white"/>
                 </div>
-                <p>Strict 2-hour time limit with warnings as time runs low</p>
+                <p>Strict 1-hour time limit w</p>
               </li>
             </ul>
           </div>
