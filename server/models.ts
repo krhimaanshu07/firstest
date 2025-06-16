@@ -54,7 +54,7 @@ const QuestionSchema = new Schema<IQuestion>({
   title: { type: String, required: true },
   content: { type: String, required: true },
   type: { type: String, required: true },
-  category: { type: String, required: true },
+  // category: { type: String, required: true },
   difficulty: { type: String, default: 'medium' },
   options: { type: [String] },
   correctAnswer: { type: String, required: true }
