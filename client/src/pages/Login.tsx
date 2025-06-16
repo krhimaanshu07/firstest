@@ -39,7 +39,16 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen relative">
+      {/* Logo in top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <img 
+          src="/logo.jpeg" 
+          alt="Logo" 
+          className="h-16 w-auto object-contain"
+        />
+      </div>
+
       {/* Left Section (Dark) */}
       <div className="w-full md:w-1/2 bg-neutral-900 p-8 flex items-center justify-center">
         <div className="w-full max-w-md">
