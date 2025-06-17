@@ -545,7 +545,7 @@ export default function Assessment(_a) {
               </div>)}
             
             <p className="text-neutral-600 mb-8">
-              Thank you for completing the Computer Science assessment. Your results have been recorded.
+              Thank you for completing the assessment. Your results have been recorded.
             </p>
             
             <Button onClick={handleLogout}>
@@ -561,7 +561,7 @@ export default function Assessment(_a) {
       <header className="bg-white border-b border-neutral-200 py-4 px-6 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <BackButton to="/"/>
-          <h1 className="text-xl font-semibold text-neutral-800">Computer Science Assessment</h1>
+          <h1 className="text-xl font-semibold text-neutral-800">Hemraj Assesment Platform</h1>
           <Button variant="outline" size="sm" onClick={function () {
             var confirmed = window.confirm("This will refresh your assessment. Any unsaved progress may be lost. Continue?");
             if (confirmed) {
